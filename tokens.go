@@ -65,8 +65,14 @@ type Token struct {
 	lexeme     string
 	line       int
 	lineOffset int
+	literal    interface{}
 }
 
 func (tok Token) String() string {
-	return fmt.Sprintf("%s %s %d:%d", fmt.Sprint(tok.toktype), tok.lexeme, tok.line, tok.lineOffset)
+	return fmt.Sprintf("%s %s %s %d:%d",
+		fmt.Sprint(tok.toktype),
+		tok.lexeme,
+		fmt.Sprint(tok.literal),
+		tok.line,
+		tok.lineOffset)
 }

@@ -19,13 +19,6 @@ func Error(line int, lineOffset int, message string) {
 	Report(line, lineOffset, "", message)
 }
 
-// func Run(source string) {
-//     var s scanner.Scanner
-//     s.Init(strings.NewReader(source))
-//     for tok := s.Scan(); tok != scanner.EOF; tok = s.Scan() {
-//         fmt.Printf("%s: %s\n", s.Position, s.TokenText())
-//     }
-// }
 func Run(source string) {
 	scanner := Scanner{source, nil, 0, 0, 0, 0}
 	toks := scanner.ScanTokens()
