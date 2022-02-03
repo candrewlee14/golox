@@ -4,7 +4,8 @@ import (
 	"fmt"
 )
 
-type TokenType int
+//go:generate stringer -type=TokenType
+type TokenType uint8
 
 const (
 
@@ -55,9 +56,8 @@ const (
 	WHILE
 
 	EOF
+	INVALID
 )
-
-//go:generate stringer -type=TokenType
 
 type Token struct {
 	toktype    TokenType
@@ -68,11 +68,11 @@ type Token struct {
 }
 
 func NewToken(toktype TokenType, lexeme string, line int, lineOffset int, literal interface{}) Token {
-    return Token{toktype, lexeme, line, lineOffset, literal}
+	return Token{toktype, lexeme, line, lineOffset, literal}
 }
 
 func (tok Token) String() string {
-	return fmt.Sprintf("%s %s %s %d:%d",
+	return fmt.Sprintf("%s \"%s\" {%s} %d:%d",
 		fmt.Sprint(tok.toktype),
 		tok.lexeme,
 		fmt.Sprint(tok.literal),

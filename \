@@ -2,9 +2,9 @@ package lexer
 
 import (
 	"fmt"
-	"github.com/candrewlee14/golox/report"
-	. "github.com/candrewlee14/golox/token"
 	"strconv"
+    . "github.com/candrewlee14/golox/token"
+    "github.com/candrewlee14/golox/report"
 )
 
 var keywords map[string]TokenType = map[string]TokenType{
@@ -31,11 +31,10 @@ type Lexer struct {
 	current    int
 	lineOffset int
 	line       int
-	lineStart  int
 }
 
 func NewLexer(source string) Lexer {
-	return Lexer{source, 0, 0, 0, 0, 0}
+    return Lexer{source, 0, 0, 0, 0}
 }
 
 func (s *Lexer) isAtEnd() bool {
@@ -44,9 +43,9 @@ func (s *Lexer) isAtEnd() bool {
 
 // Consumes and returns current char
 func (s *Lexer) advance() byte {
-	if s.isAtEnd() {
-		return '\000'
-	}
+    if s.isAtEnd() {
+        return '\000'
+    }
 	c := s.source[s.current]
 	s.current += 1
 	s.lineOffset += 1
@@ -86,20 +85,24 @@ func (s *Lexer) match(expected byte) bool {
 
 func (s *Lexer) newToken(toktype TokenType) Token {
 	lex := s.source[s.lexStart:s.current]
-	return NewToken(toktype, lex, s.line, s.lexStart-s.lineStart, nil)
+	return NewToken(toktype, lex, s.line, s.lineOffset, nil)
 }
+
+// func (s *Lexer) addToken(toktype TokenType) {
+// 	s.tokens = append(s.tokens, s.newToken(toktype))
+// }
 
 func (s *Lexer) newTokenWithLiteral(toktype TokenType, val interface{}) Token {
 	lex := s.source[s.lexStart:s.current]
-	return NewToken(toktype, lex, s.line, s.lexStart-s.lineStart, val)
+	return NewToken(toktype, lex, s.line, s.lineOffset, val)
 }
 
+// func (s *Lexer) addTokenWithLiteral(toktype TokenType, val interface{}) {
+// 	s.tokens = append(s.tokens, s.newTokenWithLiteral(toktype, val))
+// }
+
 func (s *Lexer) ScanToken() Token {
-	var res Token
-	s.skipWhitespace()
-
-	s.lexStart = s.current
-
+    var res Token 
 	c := s.advance()
 	switch c {
 	case '(':
@@ -156,18 +159,20 @@ func (s *Lexer) ScanToken() Token {
 		res = s.newToken(toktype)
 	case '/':
 		if s.match('/') {
-			// ignore comment until end of line
 			for !s.isAtEnd() && s.peek() != '\n' {
 				s.current += 1
 			}
 		} else {
 			res = s.newToken(SLASH)
 		}
-	case '\000':
-		res = s.newToken(EOF)
-	case '"':
-		res = s.takeString()
-
+	case ' ', '\t', '\r':
+		// Do nothing here for whitespace, because they aren't unexpected characters
+		s.current = s.current + 0
+	case '\n':
+		s.line += 1
+		s.lineOffset = 0
+    case '\000':
+        res = s.newToken(EOF)
 	default:
 		if isAlpha(c) {
 			res = s.takeIdentifier()
@@ -175,28 +180,10 @@ func (s *Lexer) ScanToken() Token {
 			res = s.takeNumber()
 		} else {
 			report.Error(s.line, s.lineOffset, fmt.Sprintf("Unexpected character: '%c'", c))
-			res = s.newToken(INVALID)
+            res = s.newToken(INVALID)
 		}
 	}
-	return res
-}
-
-func (s *Lexer) skipWhitespace() {
-loop:
-	for {
-		switch s.peek() {
-		case '\n':
-			s.line += 1
-			s.lineOffset = 0
-			s.current += 1
-			s.lineStart = s.current
-		case ' ', '\r', '\t':
-			// just skip regular whitespace
-			s.advance()
-		default:
-			break loop
-		}
-	}
+    return res
 }
 
 func (s *Lexer) takeIdentifier() Token {
@@ -226,7 +213,7 @@ func (s *Lexer) takeString() Token {
 	}
 	s.advance()
 	str := s.source[s.lexStart+1 : s.current-1]
-	return s.newTokenWithLiteral(STRING, str)
+    return s.newTokenWithLiteral(STRING, str)
 }
 
 func (s *Lexer) takeNumber() Token {
@@ -244,15 +231,16 @@ func (s *Lexer) takeNumber() Token {
 		report.Error(s.line, s.lineOffset, "Invalid number.")
 		return s.newToken(INVALID)
 	}
-	return s.newTokenWithLiteral(NUMBER, f)
+    return s.newTokenWithLiteral(NUMBER, f)
 }
 
 func (s *Lexer) ScanTokens() []Token {
-	var tokens []Token
+    var tokens []Token
 	for !s.isAtEnd() {
-		tokens = append(tokens, s.ScanToken())
+		s.lexStart = s.current
+        tokens = append(tokens, s.ScanToken())
 	}
-	tokens = append(tokens, NewToken(EOF, "", s.line, s.lineOffset+1, nil))
+	tokens = append(tokens, NewToken(EOF, "", s.line, s.lineOffset + 1, nil))
 	return tokens
 }
 

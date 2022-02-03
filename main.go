@@ -2,9 +2,9 @@ package main
 
 import (
 	"bufio"
-    "github.com/candrewlee14/golox/lexer"
-    "github.com/candrewlee14/golox/report"
 	"fmt"
+	"github.com/candrewlee14/golox/lexer"
+	"github.com/candrewlee14/golox/report"
 	"os"
 )
 
