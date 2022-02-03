@@ -2,15 +2,16 @@ package lexer
 
 import (
 	"fmt"
-	"github.com/candrewlee14/golox/report"
-	. "github.com/candrewlee14/golox/token"
+	"golox/report"
+	. "golox/token"
 	"strconv"
 )
 
 var keywords map[string]TokenType = map[string]TokenType{
 	"and":    AND,
 	"class":  CLASS,
-	"else":   FALSE,
+	"else":   ELSE,
+    "false":  FALSE,
 	"for":    FOR,
 	"fun":    FUN,
 	"if":     IF,

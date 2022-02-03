@@ -3,8 +3,8 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"github.com/candrewlee14/golox/lexer"
-	"github.com/candrewlee14/golox/report"
+	"golox/lexer"
+	"golox/report"
 	"os"
 )
 

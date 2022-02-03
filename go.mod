@@ -1,4 +1,4 @@
-module github.com/candrewlee14/golox
+module golox
 
 go 1.13
 
