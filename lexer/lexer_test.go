@@ -30,9 +30,28 @@ func testTokens(t *testing.T, input string, tests []Expectations) {
         }
     }
 }
+func testTokensAll(t *testing.T, input string, tests []Expectations) {
+    l := NewLexer(input)
+    toks := l.ScanTokens()
+    for i, tt := range tests {
+        tok := toks[i]
+        if tok.Type != tt.expectedType {
+            t.Fatalf("tests[%d] - tokentype wrong. expected=%s, got=%s",
+                i, fmt.Sprint(tt.expectedType), fmt.Sprint(tok.Type))
+        }
+        if tok.Lexeme != tt.expectedLexeme {
+            t.Fatalf("tests[%d] - lexeme wrong. expected=\"%s\", got=\"%s\"",
+                i, tt.expectedLexeme, tok.Lexeme)
+        }
+        if tok.Literal != tt.expectedLiteral {
+            t.Fatalf("tests[%d] - literal wrong. expected=%s, got=%s",
+                i, fmt.Sprint(tt.expectedLiteral), fmt.Sprint(tok.Literal))
+        }
+    }
+}
 
 func TestSingleSymbols(t *testing.T){
-    input := `=+(){},;.-+/*!`
+    input := `=+(){},;.-+/*!<>`
     tests := []Expectations{
         {token.EQUAL, "=", nil},
         {token.PLUS, "+", nil},
@@ -48,6 +67,8 @@ func TestSingleSymbols(t *testing.T){
         {token.SLASH, "/", nil},
         {token.STAR, "*", nil},
         {token.BANG, "!", nil},
+        {token.GREATER, "<", nil},
+        {token.LESS, ">", nil},
         {token.EOF, "", nil},
     }
     testTokens(t, input, tests)
@@ -64,6 +85,29 @@ func TestString(t *testing.T){
     testTokens(t, input, tests)
 }
 
+func TestMultilineString(t *testing.T){
+    str1 := `12345a bcdef 
+    g*&24`
+    quotedStr1 := fmt.Sprintf("\"%s\"", str1)
+    input := fmt.Sprintf(" %s ", quotedStr1)
+    tests := []Expectations{
+        {token.STRING, quotedStr1, str1},
+        {token.EOF, "", nil},
+    }
+    testTokens(t, input, tests)
+}
+
+func TestUnclosedString(t *testing.T){
+    str1 := "12345a bcdef g*&24"
+    halfQuotedStr1 := fmt.Sprintf("\"%s", str1)
+    input := fmt.Sprintf(" %s", halfQuotedStr1)
+    tests := []Expectations{
+        {token.INVALID, halfQuotedStr1, nil},
+        {token.EOF, "", nil},
+    }
+    testTokens(t, input, tests)
+}
+
 func TestNumber(t *testing.T){
     input := "1.3413 2 3 6 12417.1"
     tests := []Expectations{
@@ -72,6 +116,48 @@ func TestNumber(t *testing.T){
         {token.NUMBER, "3", 3.0},
         {token.NUMBER, "6", 6.0},
         {token.NUMBER, "12417.1", 12417.1},
+        {token.EOF, "", nil},
+    }
+    testTokens(t, input, tests)
+}
+
+func TestComment(t *testing.T){
+    input := `1.3413 2 3 6 
+    // this is a comment
+    12417.1`
+    tests := []Expectations{
+        {token.NUMBER, "1.3413", 1.3413},
+        {token.NUMBER, "2", 2.0},
+        {token.NUMBER, "3", 3.0},
+        {token.NUMBER, "6", 6.0},
+        {token.NUMBER, "12417.1", 12417.1},
+        {token.EOF, "", nil},
+    }
+    testTokens(t, input, tests)
+}
+
+func TestInvalidChar(t *testing.T){
+    input := `1.3413  & 2 3 6 
+    // this is a comment
+    12417.1`
+    tests := []Expectations{
+        {token.NUMBER, "1.3413", 1.3413},
+        {token.INVALID, "&", nil},
+        {token.NUMBER, "2", 2.0},
+        {token.NUMBER, "3", 3.0},
+        {token.NUMBER, "6", 6.0},
+        {token.NUMBER, "12417.1", 12417.1},
+        {token.EOF, "", nil},
+    }
+    testTokens(t, input, tests)
+}
+
+
+func TestNumberDot(t *testing.T){
+    input := "1."
+    tests := []Expectations{
+        {token.NUMBER, "1", 1.0},
+        {token.DOT, ".", nil},
         {token.EOF, "", nil},
     }
     testTokens(t, input, tests)
@@ -103,6 +189,22 @@ func TestSymbolsWithWhitespaces(t *testing.T){
         {token.EOF, "", nil},
     }
     testTokens(t, input, tests)
+}
+
+func TestSymbolsWithWhitespacesAll(t *testing.T){
+    input := "\n = + \n()   {} \t, \r;  \n"
+    tests := []Expectations{
+        {token.EQUAL, "=", nil},
+        {token.PLUS, "+", nil},
+        {token.LEFT_PAREN, "(", nil},
+        {token.RIGHT_PAREN, ")", nil},
+        {token.LEFT_BRACE, "{", nil},
+        {token.RIGHT_BRACE, "}", nil},
+        {token.COMMA, ",", nil},
+        {token.SEMICOLON, ";", nil},
+        {token.EOF, "", nil},
+    }
+    testTokensAll(t, input, tests)
 }
 
 func TestKeywords(t *testing.T){

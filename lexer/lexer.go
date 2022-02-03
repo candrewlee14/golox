@@ -96,90 +96,98 @@ func (s *Lexer) newTokenWithLiteral(toktype TokenType, val interface{}) Token {
 }
 
 func (s *Lexer) ScanToken() Token {
-	var res Token
-	s.skipWhitespace()
+    found := false
+    loop:for !found {
+        found = true
+        var res Token
+        s.skipWhitespace()
 
-	s.lexStart = s.current
+        s.lexStart = s.current
 
-	c := s.advance()
-	switch c {
-	case '(':
-		res = s.newToken(LEFT_PAREN)
-	case ')':
-		res = s.newToken(RIGHT_PAREN)
-	case '{':
-		res = s.newToken(LEFT_BRACE)
-	case '}':
-		res = s.newToken(RIGHT_BRACE)
-	case ',':
-		res = s.newToken(COMMA)
-	case '.':
-		res = s.newToken(DOT)
-	case '-':
-		res = s.newToken(MINUS)
-	case '+':
-		res = s.newToken(PLUS)
-	case ';':
-		res = s.newToken(SEMICOLON)
-	case '*':
-		res = s.newToken(STAR)
-	case '!':
-		var toktype TokenType
-		if s.match('=') {
-			toktype = BANG_EQUAL
-		} else {
-			toktype = BANG
-		}
-		res = s.newToken(toktype)
-	case '=':
-		var toktype TokenType
-		if s.match('=') {
-			toktype = EQUAL_EQUAL
-		} else {
-			toktype = EQUAL
-		}
-		res = s.newToken(toktype)
-	case '<':
-		var toktype TokenType
-		if s.match('=') {
-			toktype = GREATER_EQUAL
-		} else {
-			toktype = GREATER
-		}
-		res = s.newToken(toktype)
-	case '>':
-		var toktype TokenType
-		if s.match('=') {
-			toktype = LESS_EQUAL
-		} else {
-			toktype = EQUAL
-		}
-		res = s.newToken(toktype)
-	case '/':
-		if s.match('/') {
-			// ignore comment until end of line
-			for !s.isAtEnd() && s.peek() != '\n' {
-				s.current += 1
-			}
-		} else {
-			res = s.newToken(SLASH)
-		}
-	case '\000':
-		res = s.newToken(EOF)
-	case '"':
-		res = s.takeString()
+        c := s.advance()
+        switch c {
+        case '(':
+            res = s.newToken(LEFT_PAREN)
+        case ')':
+            res = s.newToken(RIGHT_PAREN)
+        case '{':
+            res = s.newToken(LEFT_BRACE)
+        case '}':
+            res = s.newToken(RIGHT_BRACE)
+        case ',':
+            res = s.newToken(COMMA)
+        case '.':
+            res = s.newToken(DOT)
+        case '-':
+            res = s.newToken(MINUS)
+        case '+':
+            res = s.newToken(PLUS)
+        case ';':
+            res = s.newToken(SEMICOLON)
+        case '*':
+            res = s.newToken(STAR)
+        case '!':
+            var toktype TokenType
+            if s.match('=') {
+                toktype = BANG_EQUAL
+            } else {
+                toktype = BANG
+            }
+            res = s.newToken(toktype)
+        case '=':
+            var toktype TokenType
+            if s.match('=') {
+                toktype = EQUAL_EQUAL
+            } else {
+                toktype = EQUAL
+            }
+            res = s.newToken(toktype)
+        case '<':
+            var toktype TokenType
+            if s.match('=') {
+                toktype = GREATER_EQUAL
+            } else {
+                toktype = GREATER
+            }
+            res = s.newToken(toktype)
+        case '>':
+            var toktype TokenType
+            if s.match('=') {
+                toktype = LESS_EQUAL
+            } else {
+                toktype = LESS
+            }
+            res = s.newToken(toktype)
+        case '/':
+            if s.match('/') {
+                // ignore comment until end of line
+                for !s.isAtEnd() && s.peek() != '\n' {
+                    s.current += 1
+                }
+                found = false
+            } else {
+                res = s.newToken(SLASH)
+            }
+        case '\000':
+            res = s.newToken(EOF)
+        case '"':
+            res = s.takeString()
 
-	default:
-		if isAlpha(c) {
-			res = s.takeIdentifier()
-		} else if isDigit(c) {
-			res = s.takeNumber()
-		} else {
-			report.Error(s.line, s.lineOffset, fmt.Sprintf("Unexpected character: '%c'", c))
-			res = s.newToken(INVALID)
-		}
-	}
-	return res
+        default:
+            if isAlpha(c) {
+                res = s.takeIdentifier()
+            } else if isDigit(c) {
+                res = s.takeNumber()
+            } else {
+                report.Error(s.line, s.lineOffset, fmt.Sprintf("Unexpected character: '%c'", c))
+                break loop
+            }
+        }
+        if found {
+            return res
+        }
+    }
+    return s.newToken(INVALID)
 }
 
 func (s *Lexer) skipWhitespace() {
@@ -240,11 +248,8 @@ func (s *Lexer) takeNumber() Token {
 			s.advance()
 		}
 	}
-	f, err := strconv.ParseFloat(s.source[s.lexStart:s.current], 64)
-	if err != nil {
-		report.Error(s.line, s.lineOffset, "Invalid number.")
-		return s.newToken(INVALID)
-	}
+    // Error cannot be possible here since numbers are of form x or x.x
+	f, _ := strconv.ParseFloat(s.source[s.lexStart:s.current], 64)
 	return s.newTokenWithLiteral(NUMBER, f)
 }
 
