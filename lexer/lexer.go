@@ -1,3 +1,4 @@
+// Package lexer implements lexing/tokenization
 package lexer
 
 import (
@@ -27,7 +28,7 @@ var keywords map[string]TokenType = map[string]TokenType{
 	"while":  WHILE,
 }
 
-// Used to tokenize source code
+// Lexer is used to tokenize source code
 type Lexer struct {
 	source     string
 	lexStart   int
@@ -37,12 +38,12 @@ type Lexer struct {
 	lineStart  int
 }
 
-// Return a new lexer scanner at the start of source
+// NewLexer returns a new lexer scanner at the start of source
 func NewLexer(source string) Lexer {
 	return Lexer{source, 0, 0, 0, 0, 0}
 }
 
-// Return if lexer has reached the EOF
+// Returns if lexer has reached the EOF
 func (s *Lexer) isAtEnd() bool {
 	return s.current >= len(s.source)
 }
@@ -53,8 +54,8 @@ func (s *Lexer) advance() byte {
 		return '\000'
 	}
 	c := s.source[s.current]
-	s.current += 1
-	s.lineOffset += 1
+	s.current++
+	s.lineOffset++
 	return c
 }
 
@@ -101,7 +102,7 @@ func (s *Lexer) newTokenWithLiteral(toktype TokenType, val interface{}) Token {
 	return NewToken(toktype, lex, s.line, s.lexStart-s.lineStart, val)
 }
 
-// Scan, consume, and return next Token
+// ScanToken scans, consumes, and returns next Token
 func (s *Lexer) ScanToken() Token {
 	found := false
 loop:
@@ -170,7 +171,7 @@ loop:
 			if s.match('/') {
 				// ignore comment until end of line
 				for !s.isAtEnd() && s.peek() != '\n' {
-					s.current += 1
+					s.current++
 				}
 				found = false
 			} else {
@@ -205,9 +206,9 @@ loop:
 	for {
 		switch s.peek() {
 		case '\n':
-			s.line += 1
+			s.line++
 			s.lineOffset = 0
-			s.current += 1
+			s.current++
 			s.lineStart = s.current
 		case ' ', '\r', '\t':
 			// just skip regular whitespace
@@ -227,16 +228,15 @@ func (s *Lexer) takeIdentifier() Token {
 	toktype, found := keywords[txt]
 	if found {
 		return s.newToken(toktype)
-	} else {
-		return s.newToken(IDENTIFIER)
 	}
+	return s.newToken(IDENTIFIER)
 }
 
 // Return the string Token starting at current lexer position
 func (s *Lexer) takeString() Token {
 	for !s.isAtEnd() && s.peek() != '"' {
 		if s.peek() == '\n' {
-			s.line += 1
+			s.line++
 			s.lineOffset = 0
 		}
 		s.advance()
@@ -266,7 +266,7 @@ func (s *Lexer) takeNumber() Token {
 	return s.newTokenWithLiteral(NUMBER, f)
 }
 
-// Scan and consume all tokens until EOF and return Token list
+// ScanTokens scans and consumes all tokens until EOF and returns Token list
 func (s *Lexer) ScanTokens() []Token {
 	var tokens []Token
 	for !s.isAtEnd() {

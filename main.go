@@ -8,6 +8,7 @@ import (
 	"os"
 )
 
+// Run interprets source code
 func Run(source string) {
 	scanner := lexer.NewLexer(source)
 	toks := scanner.ScanTokens()
@@ -16,6 +17,7 @@ func Run(source string) {
 	}
 }
 
+// RunPrompt interprets lines in a REPL
 func RunPrompt() {
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Print("> ")
@@ -30,6 +32,7 @@ func RunPrompt() {
 	}
 }
 
+// RunFile interprets a file
 func RunFile(path string) {
 	bytes, err := os.ReadFile(path)
 	if err != nil {
