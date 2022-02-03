@@ -1,8 +1,7 @@
-package main
+package token
 
 import (
 	"fmt"
-	//"text/scanner"
 )
 
 type TokenType int
@@ -66,6 +65,10 @@ type Token struct {
 	line       int
 	lineOffset int
 	literal    interface{}
+}
+
+func NewToken(toktype TokenType, lexeme string, line int, lineOffset int, literal interface{}) Token {
+    return Token{toktype, lexeme, line, lineOffset, literal}
 }
 
 func (tok Token) String() string {

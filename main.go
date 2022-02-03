@@ -2,25 +2,14 @@ package main
 
 import (
 	"bufio"
-	//"strings"
-	//"text/scanner"
+    "github.com/candrewlee14/golox/lexer"
+    "github.com/candrewlee14/golox/report"
 	"fmt"
 	"os"
 )
 
-var hadError bool = false
-
-func Report(line int, lineOffset int, where string, message string) {
-	fmt.Printf("[line %d:%d] Error %s: %s\n", line, lineOffset, where, message)
-}
-
-func Error(line int, lineOffset int, message string) {
-	hadError = true
-	Report(line, lineOffset, "", message)
-}
-
 func Run(source string) {
-	scanner := Scanner{source, nil, 0, 0, 0, 0}
+	scanner := lexer.NewLexer(source)
 	toks := scanner.ScanTokens()
 	for _, tok := range toks {
 		fmt.Println(tok)
@@ -37,7 +26,7 @@ func RunPrompt() {
 		}
 		Run(string(line))
 		fmt.Print("> ")
-		hadError = false
+		report.HadError = false
 	}
 }
 
@@ -48,7 +37,7 @@ func RunFile(path string) {
 		os.Exit(64)
 	}
 	Run(string(bytes))
-	if hadError {
+	if report.HadError {
 		os.Exit(65)
 	}
 }

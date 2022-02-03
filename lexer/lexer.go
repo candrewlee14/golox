@@ -1,8 +1,10 @@
-package main
+package lexer
 
 import (
 	"fmt"
 	"strconv"
+    . "github.com/candrewlee14/golox/token"
+    "github.com/candrewlee14/golox/report"
 )
 
 var keywords map[string]TokenType = map[string]TokenType{
@@ -23,7 +25,7 @@ var keywords map[string]TokenType = map[string]TokenType{
 	"while":  WHILE,
 }
 
-type Scanner struct {
+type Lexer struct {
 	source     string
 	tokens     []Token
 	lexStart   int
@@ -32,12 +34,16 @@ type Scanner struct {
 	line       int
 }
 
-func (s *Scanner) isAtEnd() bool {
+func NewLexer(source string) Lexer {
+    return Lexer{source, nil, 0, 0, 0, 0}
+}
+
+func (s *Lexer) isAtEnd() bool {
 	return s.current >= len(s.source)
 }
 
 // Consumes and returns current char
-func (s *Scanner) advance() byte {
+func (s *Lexer) advance() byte {
 	c := s.source[s.current]
 	s.current += 1
 	s.lineOffset += 1
@@ -46,7 +52,7 @@ func (s *Scanner) advance() byte {
 
 // Returns current char without consuming
 // Returns null char if EOF
-func (s *Scanner) peek() byte {
+func (s *Lexer) peek() byte {
 	if s.isAtEnd() {
 		return '\000'
 	}
@@ -55,7 +61,7 @@ func (s *Scanner) peek() byte {
 
 // Returns next char without consuming
 // Returns null char if EOF
-func (s *Scanner) peekNext() byte {
+func (s *Lexer) peekNext() byte {
 	if s.current+1 >= len(s.source) {
 		return '\000'
 	}
@@ -63,7 +69,7 @@ func (s *Scanner) peekNext() byte {
 }
 
 // Checks if current char matches given char and advances if so
-func (s *Scanner) match(expected byte) bool {
+func (s *Lexer) match(expected byte) bool {
 	if s.isAtEnd() {
 		return false
 	}
@@ -75,17 +81,17 @@ func (s *Scanner) match(expected byte) bool {
 	return true
 }
 
-func (s *Scanner) addToken(toktype TokenType) {
+func (s *Lexer) addToken(toktype TokenType) {
 	lex := s.source[s.lexStart:s.current]
-	s.tokens = append(s.tokens, Token{toktype, lex, s.line, s.lineOffset, nil})
+	s.tokens = append(s.tokens, NewToken(toktype, lex, s.line, s.lineOffset, nil))
 }
 
-func (s *Scanner) addTokenWithLiteral(toktype TokenType, val interface{}) {
+func (s *Lexer) addTokenWithLiteral(toktype TokenType, val interface{}) {
 	lex := s.source[s.lexStart:s.current]
-	s.tokens = append(s.tokens, Token{toktype, lex, s.line, s.lineOffset, val})
+	s.tokens = append(s.tokens, NewToken(toktype, lex, s.line, s.lineOffset, val))
 }
 
-func (s *Scanner) ScanToken() {
+func (s *Lexer) ScanToken() {
 	c := s.advance()
 	switch c {
 	case '(':
@@ -160,12 +166,12 @@ func (s *Scanner) ScanToken() {
 		} else if isDigit(c) {
 			s.takeNumber()
 		} else {
-			Error(s.line, s.lineOffset, fmt.Sprintf("Unexpected character: '%c'", c))
+			report.Error(s.line, s.lineOffset, fmt.Sprintf("Unexpected character: '%c'", c))
 		}
 	}
 }
 
-func (s *Scanner) takeIdentifier() {
+func (s *Lexer) takeIdentifier() {
 	for isAlphaNumeric(s.peek()) {
 		s.advance()
 	}
@@ -178,7 +184,7 @@ func (s *Scanner) takeIdentifier() {
 	}
 }
 
-func (s *Scanner) takeString() {
+func (s *Lexer) takeString() {
 	for !s.isAtEnd() && s.peek() != '"' {
 		if s.peek() == '\n' {
 			s.line += 1
@@ -187,7 +193,7 @@ func (s *Scanner) takeString() {
 		s.advance()
 	}
 	if s.isAtEnd() {
-		Error(s.line, s.lineOffset, "Unterminated string.")
+		report.Error(s.line, s.lineOffset, "Unterminated string.")
 		return
 	}
 	s.advance()
@@ -195,7 +201,7 @@ func (s *Scanner) takeString() {
 	s.addTokenWithLiteral(STRING, str)
 }
 
-func (s *Scanner) takeNumber() {
+func (s *Lexer) takeNumber() {
 	for isDigit(s.peek()) {
 		s.advance()
 	}
@@ -207,18 +213,18 @@ func (s *Scanner) takeNumber() {
 	}
 	f, err := strconv.ParseFloat(s.source[s.lexStart:s.current], 64)
 	if err != nil {
-		Error(s.line, s.lineOffset, "Invalid number.")
+		report.Error(s.line, s.lineOffset, "Invalid number.")
 		return
 	}
 	s.addTokenWithLiteral(NUMBER, f)
 }
 
-func (s *Scanner) ScanTokens() []Token {
+func (s *Lexer) ScanTokens() []Token {
 	for !s.isAtEnd() {
 		s.lexStart = s.current
 		s.ScanToken()
 	}
-	s.tokens = append(s.tokens, Token{EOF, "", s.line, s.lineOffset + 1, nil})
+	s.tokens = append(s.tokens, NewToken(EOF, "", s.line, s.lineOffset + 1, nil))
 	return s.tokens
 }
 
