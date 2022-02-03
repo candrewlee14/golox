@@ -7,11 +7,12 @@ import (
 	"strconv"
 )
 
+// Keyword lookup table
 var keywords map[string]TokenType = map[string]TokenType{
 	"and":    AND,
 	"class":  CLASS,
 	"else":   ELSE,
-    "false":  FALSE,
+	"false":  FALSE,
 	"for":    FOR,
 	"fun":    FUN,
 	"if":     IF,
@@ -26,6 +27,7 @@ var keywords map[string]TokenType = map[string]TokenType{
 	"while":  WHILE,
 }
 
+// Used to tokenize source code
 type Lexer struct {
 	source     string
 	lexStart   int
@@ -35,10 +37,12 @@ type Lexer struct {
 	lineStart  int
 }
 
+// Return a new lexer scanner at the start of source
 func NewLexer(source string) Lexer {
 	return Lexer{source, 0, 0, 0, 0, 0}
 }
 
+// Return if lexer has reached the EOF
 func (s *Lexer) isAtEnd() bool {
 	return s.current >= len(s.source)
 }
@@ -85,111 +89,117 @@ func (s *Lexer) match(expected byte) bool {
 	return true
 }
 
+// Make new token of a given TokenType with nil content
 func (s *Lexer) newToken(toktype TokenType) Token {
 	lex := s.source[s.lexStart:s.current]
 	return NewToken(toktype, lex, s.line, s.lexStart-s.lineStart, nil)
 }
 
+// Make new token of a given TokenType with literal content
 func (s *Lexer) newTokenWithLiteral(toktype TokenType, val interface{}) Token {
 	lex := s.source[s.lexStart:s.current]
 	return NewToken(toktype, lex, s.line, s.lexStart-s.lineStart, val)
 }
 
+// Scan, consume, and return next Token
 func (s *Lexer) ScanToken() Token {
-    found := false
-    loop:for !found {
-        found = true
-        var res Token
-        s.skipWhitespace()
+	found := false
+loop:
+	for !found {
+		found = true
+		var res Token
+		s.skipWhitespace()
 
-        s.lexStart = s.current
+		s.lexStart = s.current
 
-        c := s.advance()
-        switch c {
-        case '(':
-            res = s.newToken(LEFT_PAREN)
-        case ')':
-            res = s.newToken(RIGHT_PAREN)
-        case '{':
-            res = s.newToken(LEFT_BRACE)
-        case '}':
-            res = s.newToken(RIGHT_BRACE)
-        case ',':
-            res = s.newToken(COMMA)
-        case '.':
-            res = s.newToken(DOT)
-        case '-':
-            res = s.newToken(MINUS)
-        case '+':
-            res = s.newToken(PLUS)
-        case ';':
-            res = s.newToken(SEMICOLON)
-        case '*':
-            res = s.newToken(STAR)
-        case '!':
-            var toktype TokenType
-            if s.match('=') {
-                toktype = BANG_EQUAL
-            } else {
-                toktype = BANG
-            }
-            res = s.newToken(toktype)
-        case '=':
-            var toktype TokenType
-            if s.match('=') {
-                toktype = EQUAL_EQUAL
-            } else {
-                toktype = EQUAL
-            }
-            res = s.newToken(toktype)
-        case '<':
-            var toktype TokenType
-            if s.match('=') {
-                toktype = GREATER_EQUAL
-            } else {
-                toktype = GREATER
-            }
-            res = s.newToken(toktype)
-        case '>':
-            var toktype TokenType
-            if s.match('=') {
-                toktype = LESS_EQUAL
-            } else {
-                toktype = LESS
-            }
-            res = s.newToken(toktype)
-        case '/':
-            if s.match('/') {
-                // ignore comment until end of line
-                for !s.isAtEnd() && s.peek() != '\n' {
-                    s.current += 1
-                }
-                found = false
-            } else {
-                res = s.newToken(SLASH)
-            }
-        case '\000':
-            res = s.newToken(EOF)
-        case '"':
-            res = s.takeString()
+		c := s.advance()
+		switch c {
+		case '(':
+			res = s.newToken(LEFT_PAREN)
+		case ')':
+			res = s.newToken(RIGHT_PAREN)
+		case '{':
+			res = s.newToken(LEFT_BRACE)
+		case '}':
+			res = s.newToken(RIGHT_BRACE)
+		case ',':
+			res = s.newToken(COMMA)
+		case '.':
+			res = s.newToken(DOT)
+		case '-':
+			res = s.newToken(MINUS)
+		case '+':
+			res = s.newToken(PLUS)
+		case ';':
+			res = s.newToken(SEMICOLON)
+		case '*':
+			res = s.newToken(STAR)
+		case '!':
+			var toktype TokenType
+			if s.match('=') {
+				toktype = BANG_EQUAL
+			} else {
+				toktype = BANG
+			}
+			res = s.newToken(toktype)
+		case '=':
+			var toktype TokenType
+			if s.match('=') {
+				toktype = EQUAL_EQUAL
+			} else {
+				toktype = EQUAL
+			}
+			res = s.newToken(toktype)
+		case '<':
+			var toktype TokenType
+			if s.match('=') {
+				toktype = GREATER_EQUAL
+			} else {
+				toktype = GREATER
+			}
+			res = s.newToken(toktype)
+		case '>':
+			var toktype TokenType
+			if s.match('=') {
+				toktype = LESS_EQUAL
+			} else {
+				toktype = LESS
+			}
+			res = s.newToken(toktype)
+		case '/':
+			if s.match('/') {
+				// ignore comment until end of line
+				for !s.isAtEnd() && s.peek() != '\n' {
+					s.current += 1
+				}
+				found = false
+			} else {
+				res = s.newToken(SLASH)
+			}
+		case '\000':
+			res = s.newToken(EOF)
+		case '"':
+			res = s.takeString()
 
-        default:
-            if isAlpha(c) {
-                res = s.takeIdentifier()
-            } else if isDigit(c) {
-                res = s.takeNumber()
-            } else {
-                report.Error(s.line, s.lineOffset, fmt.Sprintf("Unexpected character: '%c'", c))
-                break loop
-            }
-        }
-        if found {
-            return res
-        }
-    }
-    return s.newToken(INVALID)
+		default:
+			if isAlpha(c) {
+				res = s.takeIdentifier()
+			} else if isDigit(c) {
+				res = s.takeNumber()
+			} else {
+				report.Error(s.line, s.lineOffset, fmt.Sprintf("Unexpected character: '%c'", c))
+				break loop
+			}
+		}
+		if found {
+			return res
+		}
+	}
+	return s.newToken(INVALID)
 }
 
+// Advance the lexer scanner past the whitespace,
+// while keeping track of current position
 func (s *Lexer) skipWhitespace() {
 loop:
 	for {
@@ -208,6 +218,7 @@ loop:
 	}
 }
 
+// Return the identifier Token starting at current lexer position
 func (s *Lexer) takeIdentifier() Token {
 	for isAlphaNumeric(s.peek()) {
 		s.advance()
@@ -221,6 +232,7 @@ func (s *Lexer) takeIdentifier() Token {
 	}
 }
 
+// Return the string Token starting at current lexer position
 func (s *Lexer) takeString() Token {
 	for !s.isAtEnd() && s.peek() != '"' {
 		if s.peek() == '\n' {
@@ -238,6 +250,7 @@ func (s *Lexer) takeString() Token {
 	return s.newTokenWithLiteral(STRING, str)
 }
 
+// Return the number Token starting at current lexer position
 func (s *Lexer) takeNumber() Token {
 	for isDigit(s.peek()) {
 		s.advance()
@@ -248,11 +261,12 @@ func (s *Lexer) takeNumber() Token {
 			s.advance()
 		}
 	}
-    // Error cannot be possible here since numbers are of form x or x.x
+	// Error cannot be possible here since numbers are of form x or x.x
 	f, _ := strconv.ParseFloat(s.source[s.lexStart:s.current], 64)
 	return s.newTokenWithLiteral(NUMBER, f)
 }
 
+// Scan and consume all tokens until EOF and return Token list
 func (s *Lexer) ScanTokens() []Token {
 	var tokens []Token
 	for !s.isAtEnd() {
@@ -262,13 +276,17 @@ func (s *Lexer) ScanTokens() []Token {
 	return tokens
 }
 
+// Returns if char is 0-9 digit
 func isDigit(c byte) bool {
 	return c >= '0' && c <= '9'
 }
+
+// Returns if char is a-z or _
 func isAlpha(c byte) bool {
 	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'
 }
 
+// Returns if char is 0-9, a-z, or _
 func isAlphaNumeric(c byte) bool {
 	return isDigit(c) || isAlpha(c)
 }

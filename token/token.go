@@ -60,7 +60,7 @@ const (
 )
 
 type Token struct {
-	Type    TokenType
+	Type       TokenType
 	Lexeme     string
 	Line       int
 	LineOffset int
