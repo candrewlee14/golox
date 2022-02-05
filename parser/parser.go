@@ -7,6 +7,11 @@ import (
 	"golox/token"
 )
 
+type (
+	prefixParseFn func() ast.Expr
+	infixParseFn  func(ast.Expr) ast.Expr
+)
+
 type ParserError struct {
 	msg string
 }
@@ -16,6 +21,9 @@ type Parser struct {
 	curToken  token.Token
 	peekToken token.Token
 	errors    []ParserError
+
+	prefixParseFns map[token.TokenType]prefixParseFn
+	infixParseFns  map[token.TokenType]infixParseFn
 }
 
 func New(l *lexer.Lexer) *Parser {
@@ -26,6 +34,10 @@ func New(l *lexer.Lexer) *Parser {
 
 	p.nextToken()
 	p.nextToken()
+
+	p.prefixParseFns = map[token.TokenType]prefixParseFn{
+		token.IDENTIFIER: p.parseIdent,
+	}
 
 	return p
 }
@@ -106,14 +118,39 @@ func (p *Parser) parseVarStmt() *ast.VarStmt {
 
 func (p *Parser) parseReturnStmt() *ast.ReturnStmt {
 	stmt := &ast.ReturnStmt{Token: p.curToken}
-	p.nextToken()
 	// TODO: Fix later. Currently skip expressions until semicolon
-	for p.curToken.Type != token.SEMICOLON {
-		p.nextToken()
-		if p.curToken.Type == token.EOF {
-			p.addError(token.SEMICOLON)
-			return nil
-		}
-	}
+	fmt.Println(p.curToken)
+	p.nextToken()
+	fmt.Println(p.curToken)
+	stmt.ReturnValue = p.parseExpr(LOWEST)
+	p.matchPeek(token.SEMICOLON)
 	return stmt
+}
+
+// Expression precedence definitions
+type Prec uint8
+
+const (
+	_ Prec = iota
+	LOWEST
+	EQUALS      // ==
+	LESSGREATER // > or <
+	SUM         // +
+	PRODUCT     // *
+	PREFIX      // -X or !X
+	CALL        // myFunction(X)
+)
+
+func (p *Parser) parseExpr(prec Prec) ast.Expr {
+	prefix, found := p.prefixParseFns[p.curToken.Type]
+	if !found {
+		return nil
+	}
+	leftExp := prefix()
+
+	return leftExp
+}
+
+func (p *Parser) parseIdent() ast.Expr {
+	return ast.Identifier{Token: p.curToken}
 }

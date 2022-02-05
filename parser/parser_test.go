@@ -1,7 +1,10 @@
+//go:build unit
+// +build unit
+
 package parser
 
 import (
-	//"fmt"
+	"fmt"
 	"golox/ast"
 	"golox/lexer"
 	"golox/token"
@@ -40,7 +43,8 @@ var str = "hey there";
 	}
 	if len(program.Statements) != len(tests) {
 		t.Errorf("program.Statements: %s", program.Statements)
-		t.Fatalf("program.Statements does not contain 3 statements. got=%d",
+		t.Fatalf("program.Statements does not contain %d statements. got=%d",
+			len(tests),
 			len(program.Statements))
 	}
 	for i, tt := range tests {
@@ -124,7 +128,8 @@ return "hey there";
 	}
 	if len(program.Statements) != len(tests) {
 		t.Errorf("program.Statements: %s", program.Statements)
-		t.Fatalf("program.Statements does not contain 4 statements. got=%d",
+		t.Fatalf("program.Statements does not contain %d statements. got=%d",
+			len(tests),
 			len(program.Statements))
 	}
 	for i, tt := range tests {
@@ -155,4 +160,33 @@ func assertNoParserErrors(t *testing.T, p *Parser) {
 		t.Errorf("parser error: %q", msg)
 	}
 	t.FailNow()
+}
+
+func TestIdentExpr(t *testing.T) {
+	input := "return foobar;"
+	l := lexer.NewLexer(input)
+	p := New(&l)
+	program := p.ParseProgram()
+	fmt.Println(program)
+	assertNoParserErrors(t, p)
+	if len(program.Statements) != 1 {
+		t.Fatalf("program has incorrect number of statements. expected=1, got=%d",
+			len(program.Statements))
+	}
+	stmt, ok := program.Statements[0].(*ast.ReturnStmt)
+	if !ok {
+		t.Fatalf("program.Statements[0] is not ast.ExpressionStatement. got=%T",
+			program.Statements[0])
+	}
+	ident, ok := stmt.ReturnValue.(ast.Identifier)
+	if !ok {
+		t.Fatalf("stmt.Expr is not ast.Identifier. got=%T",
+			stmt.ReturnValue)
+	}
+	if ident.Token.Lexeme != "foobar" {
+		t.Errorf("ident.Value is not %s. got=%s", "foobar", ident.Token.Lexeme)
+	}
+	if ident.TokenLexeme() != "foobar" {
+		t.Errorf("ident.TokenLexeme() is not %s. got=%s", "foobar", ident.TokenLexeme())
+	}
 }
