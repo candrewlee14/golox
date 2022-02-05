@@ -31,14 +31,16 @@ func TestProgramString(t *testing.T) {
 
 func TestTokenLexeme(t *testing.T) {
 	if program.TokenLexeme() != "var" {
-		t.Fatalf("program.tokenLexeme() wrong. expected=%q, got=%q", "var", program.TokenLexeme())
+		t.Fatalf("program.tokenLexeme() wrong. expected=%q, got=%q", "var",
+			program.TokenLexeme())
 	}
 	stmt, ok := program.Statements[0].(*VarStmt)
 	if !ok {
 		t.Fatalf("program statement not *VarStmt. got=%T", program.Statements[0])
 	}
 	if stmt.TokenLexeme() != "var" {
-		t.Fatalf("program.tokenLexeme() wrong. expected=%q, got=%q", "var", program.TokenLexeme())
+		t.Fatalf("program.tokenLexeme() wrong. expected=%q, got=%q", "var",
+			program.TokenLexeme())
 	}
 	if stmt.Name.TokenLexeme() != "myVar" {
 		t.Fatalf("stmt.Name.tokenLexeme() wrong. expected=%q, got=%q", "myVar",

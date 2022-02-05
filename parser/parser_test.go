@@ -4,7 +4,7 @@
 package parser
 
 import (
-	"fmt"
+	//"fmt"
 	"golox/ast"
 	"golox/lexer"
 	"golox/token"
@@ -167,7 +167,6 @@ func TestIdentExpr(t *testing.T) {
 	l := lexer.NewLexer(input)
 	p := New(&l)
 	program := p.ParseProgram()
-	fmt.Println(program)
 	assertNoParserErrors(t, p)
 	if len(program.Statements) != 1 {
 		t.Fatalf("program has incorrect number of statements. expected=1, got=%d",
@@ -188,5 +187,100 @@ func TestIdentExpr(t *testing.T) {
 	}
 	if ident.TokenLexeme() != "foobar" {
 		t.Errorf("ident.TokenLexeme() is not %s. got=%s", "foobar", ident.TokenLexeme())
+	}
+}
+
+func TestNumExpr(t *testing.T) {
+	input := "return 1.513;"
+	l := lexer.NewLexer(input)
+	p := New(&l)
+	program := p.ParseProgram()
+	assertNoParserErrors(t, p)
+	if len(program.Statements) != 1 {
+		t.Fatalf("program has incorrect number of statements. expected=1, got=%d",
+			len(program.Statements))
+	}
+	stmt, ok := program.Statements[0].(*ast.ReturnStmt)
+	if !ok {
+		t.Fatalf("program.Statements[0] is not ast.ReturnStmt. got=%T",
+			program.Statements[0])
+	}
+	num, ok := stmt.ReturnValue.(ast.NumExpr)
+	if !ok {
+		t.Fatalf("stmt.Expr is not ast.NumExpr. got=%T",
+			stmt.ReturnValue)
+	}
+	if num.Token.Lexeme != "1.513" {
+		t.Errorf("num lexeme is not %s. got=%s", "1.513", num.Token.Lexeme)
+	}
+	if num.Token.Literal != 1.513 {
+		t.Errorf("num literal is not %f. got=%f", 1.513, num.Token.Literal)
+	}
+	if num.TokenLexeme() != "1.513" {
+		t.Errorf("num.TokenLexeme() is not %s. got=%s", "1.513", num.TokenLexeme())
+	}
+}
+
+func TestStrExpr(t *testing.T) {
+	valStr := "abc defg hey 12345"
+	quotedStr := `"abc defg hey 12345"`
+	input := `return "abc defg hey 12345";`
+	l := lexer.NewLexer(input)
+	p := New(&l)
+	program := p.ParseProgram()
+	assertNoParserErrors(t, p)
+	if len(program.Statements) != 1 {
+		t.Fatalf("program has incorrect number of statements. expected=1, got=%d",
+			len(program.Statements))
+	}
+	stmt, ok := program.Statements[0].(*ast.ReturnStmt)
+	if !ok {
+		t.Fatalf("program.Statements[0] is not ast.ReturnStmt. got=%T",
+			program.Statements[0])
+	}
+	str, ok := stmt.ReturnValue.(ast.StrExpr)
+	if !ok {
+		t.Fatalf("stmt.Expr is not ast.StrExpr. got=%T",
+			stmt.ReturnValue)
+	}
+	if str.Token.Lexeme != quotedStr {
+		t.Errorf("str lexeme is not %q. got=%q", quotedStr, str.Token.Lexeme)
+	}
+	if str.Token.Literal != valStr {
+		t.Errorf("str literal is not %q. got=%q", valStr, str.Token.Literal)
+	}
+	if str.TokenLexeme() != quotedStr {
+		t.Errorf("str.TokenLexeme() is not %q. got=%q", quotedStr, str.TokenLexeme())
+	}
+}
+
+func TestBoolExpr(t *testing.T) {
+	input := "return true;"
+	l := lexer.NewLexer(input)
+	p := New(&l)
+	program := p.ParseProgram()
+	assertNoParserErrors(t, p)
+	if len(program.Statements) != 1 {
+		t.Fatalf("program has incorrect number of statements. expected=1, got=%d",
+			len(program.Statements))
+	}
+	stmt, ok := program.Statements[0].(*ast.ReturnStmt)
+	if !ok {
+		t.Fatalf("program.Statements[0] is not ast.ReturnStmt. got=%T",
+			program.Statements[0])
+	}
+	b, ok := stmt.ReturnValue.(ast.BoolExpr)
+	if !ok {
+		t.Fatalf("stmt.Expr is not ast.BoolExpr. got=%T",
+			stmt.ReturnValue)
+	}
+	if b.Token.Lexeme != "true" {
+		t.Errorf("bool lexeme is not %s. got=%s", "true", b.Token.Lexeme)
+	}
+	if b.Token.Literal != true {
+		t.Errorf("bool literal is not %t. got=%t", true, b.Token.Literal)
+	}
+	if b.TokenLexeme() != "true" {
+		t.Errorf("bool.TokenLexeme() is not %s. got=%s", "true", b.TokenLexeme())
 	}
 }

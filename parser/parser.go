@@ -37,6 +37,10 @@ func New(l *lexer.Lexer) *Parser {
 
 	p.prefixParseFns = map[token.TokenType]prefixParseFn{
 		token.IDENTIFIER: p.parseIdent,
+		token.NUMBER:     p.parseNum,
+		token.STRING:     p.parseStr,
+		token.TRUE:       p.parseBool,
+		token.FALSE:      p.parseBool,
 	}
 
 	return p
@@ -119,9 +123,7 @@ func (p *Parser) parseVarStmt() *ast.VarStmt {
 func (p *Parser) parseReturnStmt() *ast.ReturnStmt {
 	stmt := &ast.ReturnStmt{Token: p.curToken}
 	// TODO: Fix later. Currently skip expressions until semicolon
-	fmt.Println(p.curToken)
 	p.nextToken()
-	fmt.Println(p.curToken)
 	stmt.ReturnValue = p.parseExpr(LOWEST)
 	p.matchPeek(token.SEMICOLON)
 	return stmt
@@ -153,4 +155,16 @@ func (p *Parser) parseExpr(prec Prec) ast.Expr {
 
 func (p *Parser) parseIdent() ast.Expr {
 	return ast.Identifier{Token: p.curToken}
+}
+
+func (p *Parser) parseNum() ast.Expr {
+	return ast.NumExpr{Token: p.curToken}
+}
+
+func (p *Parser) parseStr() ast.Expr {
+	return ast.StrExpr{Token: p.curToken}
+}
+
+func (p *Parser) parseBool() ast.Expr {
+	return ast.BoolExpr{Token: p.curToken}
 }

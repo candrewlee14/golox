@@ -227,6 +227,11 @@ func (s *Lexer) takeIdentifier() Token {
 	txt := s.source[s.lexStart:s.current]
 	toktype, found := keywords[txt]
 	if found {
+		if toktype == TRUE {
+			return s.newTokenWithLiteral(toktype, true)
+		} else if toktype == FALSE {
+			return s.newTokenWithLiteral(toktype, false)
+		}
 		return s.newToken(toktype)
 	}
 	return s.newToken(IDENTIFIER)

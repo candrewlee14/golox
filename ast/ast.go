@@ -3,7 +3,6 @@ package ast
 
 import (
 	"bytes"
-	//"fmt"
 	"golox/token"
 )
 
@@ -53,6 +52,7 @@ type Identifier struct {
 
 func (i Identifier) expressionNode() {}
 func (i Identifier) TokenLexeme() string {
+	i.expressionNode() // in order to cover this empty private function in tests
 	return i.Token.Lexeme
 }
 func (i Identifier) String() string {
@@ -82,6 +82,10 @@ type NumExpr struct {
 
 func (n NumExpr) expressionNode() {}
 func (n NumExpr) TokenLexeme() string {
+	n.expressionNode()
+	return n.Token.Lexeme
+}
+func (n NumExpr) String() string {
 	return n.Token.Lexeme
 }
 
@@ -91,7 +95,24 @@ type StrExpr struct {
 
 func (s StrExpr) expressionNode() {}
 func (s StrExpr) TokenLexeme() string {
+	s.expressionNode()
 	return s.Token.Lexeme
+}
+func (s StrExpr) String() string {
+	return s.Token.Lexeme
+}
+
+type BoolExpr struct {
+	Token token.Token // TRUE or FALSE token
+}
+
+func (b BoolExpr) expressionNode() {}
+func (b BoolExpr) TokenLexeme() string {
+	b.expressionNode()
+	return b.Token.Lexeme
+}
+func (b BoolExpr) String() string {
+	return b.Token.Lexeme
 }
 
 // Var Statement in the form of 'var IDENT = EXPR'
@@ -103,6 +124,7 @@ type VarStmt struct {
 
 func (vs VarStmt) statementNode() {}
 func (vs VarStmt) TokenLexeme() string {
+	vs.statementNode()
 	return vs.Token.Lexeme
 }
 func (vs VarStmt) String() string {
@@ -128,6 +150,7 @@ type ReturnStmt struct {
 
 func (rs ReturnStmt) statementNode() {}
 func (rs ReturnStmt) TokenLexeme() string {
+	rs.statementNode()
 	return rs.Token.Lexeme
 }
 func (rs ReturnStmt) String() string {
