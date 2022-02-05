@@ -54,9 +54,6 @@ var str = "hey there";
 }
 
 func testVarStmt(t *testing.T, s ast.Stmt, varTest VarTest) {
-	if s.TokenLexeme() != "var" {
-		t.Fatalf("s.TokenLexeme not 'var'. got=%q", s.TokenLexeme())
-	}
 	varStmt, ok := s.(*ast.VarStmt)
 	if !ok {
 		t.Fatalf("s not *ast.VarStatement. got=%q", s)
@@ -101,6 +98,7 @@ type ReturnTest struct {
 	expectedLine        int
 	expectedLineOffset  int
 	expectedExprType    token.TokenType
+	expectedExprString  string
 	expectedExprLiteral interface{}
 }
 
@@ -121,10 +119,10 @@ return "hey there";
 		t.Fatalf("ParseProgram() returned nil")
 	}
 	tests := []ReturnTest{
-		{1, 7, token.NUMBER, 1.34},
-		{2, 7, token.NUMBER, 2.0},
-		{3, 7, token.NUMBER, 3814.0},
-		{4, 7, token.STRING, "hey there"},
+		{1, 7, token.NUMBER, "1.34", 1.34},
+		{2, 7, token.NUMBER, "2", 2.0},
+		{3, 7, token.NUMBER, "3814", 3814.0},
+		{4, 7, token.STRING, `"hey there"`, "hey there"},
 	}
 	if len(program.Statements) != len(tests) {
 		t.Errorf("program.Statements: %s", program.Statements)
@@ -141,13 +139,13 @@ return "hey there";
 func testReturnStmt(t *testing.T, stmt ast.Stmt, test ReturnTest) {
 	returnStmt, ok := stmt.(*ast.ReturnStmt)
 	if !ok {
-		t.Errorf("stmt not *ast.returnStmt. got=%T", stmt)
+		t.Fatalf("stmt not *ast.returnStmt. got=%T", stmt)
 	}
-	if returnStmt.TokenLexeme() != "return" {
-		t.Errorf("returnStmt.TokenLiteral not 'return', got %q",
-			returnStmt.TokenLexeme())
+	if returnStmt.ReturnValue.String() != test.expectedExprString {
+		t.Fatalf("invalid return value string. expected=%q, got=%q",
+			test.expectedExprString,
+			returnStmt.ReturnValue.String())
 	}
-	// TODO: check expr value literal equality
 }
 
 func assertNoParserErrors(t *testing.T, p *Parser) {
@@ -185,9 +183,6 @@ func TestIdentExpr(t *testing.T) {
 	if ident.Token.Lexeme != "foobar" {
 		t.Errorf("ident.Value is not %s. got=%s", "foobar", ident.Token.Lexeme)
 	}
-	if ident.TokenLexeme() != "foobar" {
-		t.Errorf("ident.TokenLexeme() is not %s. got=%s", "foobar", ident.TokenLexeme())
-	}
 }
 
 func TestNumExpr(t *testing.T) {
@@ -215,9 +210,6 @@ func TestNumExpr(t *testing.T) {
 	}
 	if num.Token.Literal != 1.513 {
 		t.Errorf("num literal is not %f. got=%f", 1.513, num.Token.Literal)
-	}
-	if num.TokenLexeme() != "1.513" {
-		t.Errorf("num.TokenLexeme() is not %s. got=%s", "1.513", num.TokenLexeme())
 	}
 }
 
@@ -249,9 +241,6 @@ func TestStrExpr(t *testing.T) {
 	if str.Token.Literal != valStr {
 		t.Errorf("str literal is not %q. got=%q", valStr, str.Token.Literal)
 	}
-	if str.TokenLexeme() != quotedStr {
-		t.Errorf("str.TokenLexeme() is not %q. got=%q", quotedStr, str.TokenLexeme())
-	}
 }
 
 func TestBoolExpr(t *testing.T) {
@@ -279,8 +268,5 @@ func TestBoolExpr(t *testing.T) {
 	}
 	if b.Token.Literal != true {
 		t.Errorf("bool literal is not %t. got=%t", true, b.Token.Literal)
-	}
-	if b.TokenLexeme() != "true" {
-		t.Errorf("bool.TokenLexeme() is not %s. got=%s", "true", b.TokenLexeme())
 	}
 }

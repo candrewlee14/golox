@@ -8,7 +8,6 @@ import (
 
 // AST Node
 type Node interface {
-	TokenLexeme() string
 	String() string
 }
 
@@ -21,14 +20,6 @@ type Stmt interface {
 // Program is a list of statements
 type Program struct {
 	Statements []Stmt
-}
-
-func (p Program) TokenLexeme() string {
-	if len(p.Statements) > 0 {
-		return p.Statements[0].TokenLexeme()
-	} else {
-		return ""
-	}
 }
 
 func (p Program) String() string {
@@ -51,41 +42,18 @@ type Identifier struct {
 }
 
 func (i Identifier) expressionNode() {}
-func (i Identifier) TokenLexeme() string {
+func (i Identifier) String() string {
 	i.expressionNode() // in order to cover this empty private function in tests
 	return i.Token.Lexeme
 }
-func (i Identifier) String() string {
-	return i.TokenLexeme()
-}
-
-// type ExprStatement struct {
-// 	Token token.Token
-// 	Expr  Expr
-// }
-
-// func (es *ExprStatement) statementNode() {}
-// func (es *ExprStatement) TokenLexeme() string {
-// 	return es.Token.Lexeme
-// }
-// func (es *ExprStatement) String() string {
-// 	// TODO: remove nil check
-// 	if es.Expr != nil {
-// 		return es.Expr.String()
-// 	}
-// 	return ""
-// }
 
 type NumExpr struct {
 	Token token.Token // NUMBER token
 }
 
 func (n NumExpr) expressionNode() {}
-func (n NumExpr) TokenLexeme() string {
-	n.expressionNode()
-	return n.Token.Lexeme
-}
 func (n NumExpr) String() string {
+	n.expressionNode()
 	return n.Token.Lexeme
 }
 
@@ -94,11 +62,8 @@ type StrExpr struct {
 }
 
 func (s StrExpr) expressionNode() {}
-func (s StrExpr) TokenLexeme() string {
-	s.expressionNode()
-	return s.Token.Lexeme
-}
 func (s StrExpr) String() string {
+	s.expressionNode()
 	return s.Token.Lexeme
 }
 
@@ -107,11 +72,8 @@ type BoolExpr struct {
 }
 
 func (b BoolExpr) expressionNode() {}
-func (b BoolExpr) TokenLexeme() string {
-	b.expressionNode()
-	return b.Token.Lexeme
-}
 func (b BoolExpr) String() string {
+	b.expressionNode()
 	return b.Token.Lexeme
 }
 
@@ -123,14 +85,11 @@ type VarStmt struct {
 }
 
 func (vs VarStmt) statementNode() {}
-func (vs VarStmt) TokenLexeme() string {
-	vs.statementNode()
-	return vs.Token.Lexeme
-}
 func (vs VarStmt) String() string {
+	vs.statementNode()
 	var out bytes.Buffer
 
-	out.WriteString(vs.TokenLexeme() + " ")
+	out.WriteString(vs.Token.Lexeme + " ")
 	out.WriteString(vs.Name.String())
 
 	// TODO: remove nil check
@@ -149,13 +108,10 @@ type ReturnStmt struct {
 }
 
 func (rs ReturnStmt) statementNode() {}
-func (rs ReturnStmt) TokenLexeme() string {
-	rs.statementNode()
-	return rs.Token.Lexeme
-}
 func (rs ReturnStmt) String() string {
+	rs.statementNode()
 	var out bytes.Buffer
-	out.WriteString(rs.TokenLexeme())
+	out.WriteString(rs.Token.Lexeme)
 
 	// TODO: remove nil check
 	if rs.ReturnValue != nil {
