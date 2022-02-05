@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"golox/lexer"
+	"golox/parser"
 	"golox/report"
 	"os"
 )
@@ -11,9 +12,18 @@ import (
 // Run interprets source code
 func Run(source string) {
 	scanner := lexer.NewLexer(source)
-	toks := scanner.ScanTokens()
-	for _, tok := range toks {
-		fmt.Println(tok)
+	p := parser.New(&scanner)
+	prog := p.ParseProgram()
+	es := p.Errors()
+	if len(es) > 0 {
+		fmt.Printf("%d parsing errors encountered.\n", len(es))
+		for _, e := range p.Errors() {
+			fmt.Printf("Error: %s\n", e)
+		}
+	} else {
+		for _, stmt := range prog.Statements {
+			fmt.Println(stmt)
+		}
 	}
 }
 

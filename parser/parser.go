@@ -88,6 +88,7 @@ func (p *Parser) parseStatement() ast.Stmt {
 			ParserError{msg: fmt.Sprintf(
 				"Expected the beginning of a statement, like 'var x = 100' at line %d:%d. Got=%s",
 				p.curToken.Line, p.curToken.LineOffset, p.curToken.Type.String())})
+		p.advancePast(token.SEMICOLON)
 		return nil
 	}
 }
