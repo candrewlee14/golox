@@ -4,11 +4,12 @@
 package parser
 
 import (
-	//"fmt"
+	"fmt"
 	"golox/ast"
 	"golox/lexer"
 	"golox/token"
 	"testing"
+	//"reflect"
 )
 
 type VarTest struct {
@@ -25,6 +26,8 @@ var x = 1.34;
 var y = 2;
 var foobar = 3814;
 var str = "hey there";
+var super_cool_bool = true;
+var _foo23 = false;
 `
 	l := lexer.NewLexer(input)
 	p := New(&l)
@@ -40,6 +43,8 @@ var str = "hey there";
 		{"y", 2, 4, token.NUMBER, 2.0},
 		{"foobar", 3, 4, token.NUMBER, 3814.0},
 		{"str", 4, 4, token.STRING, "hey there"},
+		{"super_cool_bool", 5, 4, token.TRUE, true},
+		{"_foo23", 6, 4, token.FALSE, false},
 	}
 	if len(program.Statements) != len(tests) {
 		t.Errorf("program.Statements: %s", program.Statements)
@@ -75,23 +80,30 @@ func testVarStmt(t *testing.T, s ast.Stmt, varTest VarTest) {
 	}
 
 	// TODO: check expr value literal equality
-	// numExpr, okNum := varStmt.Value.(*ast.NumExpr)
-	// strExpr, okStr := varStmt.Value.(*ast.StrExpr)
-	// if okNum {
-	//     if numExpr.Token.Literal != varTest.expectedExprLiteral {
-	//     t.Fatalf("numExpr literal not '%s'. got=%s",
-	//         fmt.Sprint(varTest.expectedExprLiteral),
-	//         fmt.Sprint(varStmt.Name.Token.Literal))
-	//     }
-	// } else if okStr {
-	//     if strExpr.Token.Literal != varTest.expectedExprLiteral {
-	//     t.Fatalf("strExpr literal not '%s'. got=%s",
-	//         fmt.Sprint(varTest.expectedExprLiteral),
-	//         fmt.Sprint(varStmt.Name.Token.Literal))
-	//     }
-	// } else {
-	//     t.Fatalf("varStmt.Value was not a numExpr or strExpr")
-	// }
+	numExpr, okNum := varStmt.Value.(ast.NumExpr)
+	strExpr, okStr := varStmt.Value.(ast.StrExpr)
+	boolExpr, okBool := varStmt.Value.(ast.BoolExpr)
+	if okNum {
+		if numExpr.Token.Literal != varTest.expectedExprLiteral {
+			t.Fatalf("numExpr literal not '%s'. got=%s",
+				fmt.Sprint(varTest.expectedExprLiteral),
+				fmt.Sprint(varStmt.Name.Token.Literal))
+		}
+	} else if okStr {
+		if strExpr.Token.Literal != varTest.expectedExprLiteral {
+			t.Fatalf("strExpr literal not '%s'. got=%s",
+				fmt.Sprint(varTest.expectedExprLiteral),
+				fmt.Sprint(varStmt.Name.Token.Literal))
+		}
+	} else if okBool {
+		if boolExpr.Token.Literal != varTest.expectedExprLiteral {
+			t.Fatalf("boolExpr literal not '%s'. got=%s",
+				fmt.Sprint(varTest.expectedExprLiteral),
+				fmt.Sprint(varStmt.Name.Token.Literal))
+		}
+	} else {
+		t.Fatalf("varStmt.Value was not a numExpr or strExpr, got=%T", varStmt.Value)
+	}
 }
 
 type ReturnTest struct {
@@ -155,7 +167,7 @@ func assertNoParserErrors(t *testing.T, p *Parser) {
 	}
 	t.Errorf("parser has %d errors", len(errors))
 	for _, msg := range errors {
-		t.Errorf("parser error: %q", msg)
+		t.Errorf("parser error: %s", msg)
 	}
 	t.FailNow()
 }
@@ -268,5 +280,55 @@ func TestBoolExpr(t *testing.T) {
 	}
 	if b.Token.Literal != true {
 		t.Errorf("bool literal is not %t. got=%t", true, b.Token.Literal)
+	}
+}
+
+func TestParsingPrefixExprs(t *testing.T) {
+	prefixTests := []struct {
+		input string
+		op    string
+		val   interface{}
+	}{
+		{"return !false;", "!", false},
+		{"return -15;", "-", 15.0},
+	}
+	for _, tt := range prefixTests {
+		l := lexer.NewLexer(tt.input)
+		p := New(&l)
+		program := p.ParseProgram()
+		assertNoParserErrors(t, p)
+		if len(program.Statements) != 1 {
+			t.Fatalf("program.Statements does not contain %d statements. got=%d\n",
+				1, len(program.Statements))
+		}
+		stmt, ok := program.Statements[0].(*ast.ReturnStmt)
+		if !ok {
+			t.Fatalf("program.Statements[0] is not ast.ReturnStmt. got=%T",
+				program.Statements[0])
+		}
+		exp, ok := stmt.ReturnValue.(*ast.PrefixExpr)
+		if !ok {
+			t.Fatalf("stmt is not ast.PrefixExpr. got=%T", stmt.ReturnValue)
+		}
+		if exp.Token.Lexeme != tt.op {
+			t.Fatalf("exp.Operator is not '%s'. got=%s",
+				tt.op, exp.Token.Lexeme)
+		}
+		switch exp.Right.(type) {
+		case ast.NumExpr:
+			numExp, _ := exp.Right.(ast.NumExpr)
+			if numExp.Token.Literal != tt.val {
+				t.Fatalf("numExp is not '%s'. got=%s",
+					tt.val, numExp.Token.Literal)
+			}
+		case ast.BoolExpr:
+			boolExp, _ := exp.Right.(ast.BoolExpr)
+			if boolExp.Token.Literal != tt.val {
+				t.Fatalf("boolExp is not '%s'. got=%s",
+					tt.val, boolExp.Token.Literal)
+			}
+		default:
+			t.Fatalf("exp.Right was not a num or bool")
+		}
 	}
 }

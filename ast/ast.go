@@ -77,6 +77,23 @@ func (b BoolExpr) String() string {
 	return b.Token.Lexeme
 }
 
+type PrefixExpr struct {
+	Token token.Token // unary operator token
+	Right Expr
+}
+
+func (p PrefixExpr) expressionNode() {}
+func (p PrefixExpr) String() string {
+	p.expressionNode()
+	var out bytes.Buffer
+	out.WriteString("(")
+	out.WriteString(p.Token.Lexeme) // operator
+	out.WriteString(p.Right.String())
+	out.WriteString(")")
+
+	return out.String()
+}
+
 // Var Statement in the form of 'var IDENT = EXPR'
 type VarStmt struct {
 	Token token.Token // VAR token

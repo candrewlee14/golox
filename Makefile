@@ -2,12 +2,11 @@ run:
 	go run main.go
 
 test:
-	echo "";
+	echo "--- Test Results ---"; \
 	gotest -tags=unit -cover ./...;\
 
 cover:
-	echo "";
+	echo "--- Test Results ---"; \
 	gotest -tags=unit -coverprofile=coverage.out ./... ; \
-	echo \n; \
 	go tool cover -func=coverage.out | grep -v \
-	-e "100" -e "expressionNode" -e "statementNode";
+	-e "100" -e "expressionNode" -e "statementNode"; \

@@ -41,6 +41,8 @@ func New(l *lexer.Lexer) *Parser {
 		token.STRING:     p.parseStr,
 		token.TRUE:       p.parseBool,
 		token.FALSE:      p.parseBool,
+		token.BANG:       p.parsePrefixExpr,
+		token.MINUS:      p.parsePrefixExpr,
 	}
 
 	return p
@@ -84,8 +86,8 @@ func (p *Parser) parseStatement() ast.Stmt {
 	default:
 		p.errors = append(p.errors,
 			ParserError{msg: fmt.Sprintf(
-				"Expected the beginning of a statement, like 'var x = 100' at line %d:%d",
-				p.curToken.Line, p.curToken.LineOffset)})
+				"Expected the beginning of a statement, like 'var x = 100' at line %d:%d. Got=%s",
+				p.curToken.Line, p.curToken.LineOffset, p.curToken.Type.String())})
 		return nil
 	}
 }
@@ -109,24 +111,52 @@ func (p *Parser) parseVarStmt() *ast.VarStmt {
 		p.addError(token.EQUAL)
 		return nil
 	}
-	// TODO: Fix later. Currently skip expressions until semicolon
-	for p.curToken.Type != token.SEMICOLON {
-		p.nextToken()
-		if p.curToken.Type == token.EOF {
-			p.addError(token.SEMICOLON)
-			return nil
-		}
-	}
+	p.nextToken()
+	stmt.Value = p.parseExpr(LOWEST)
+	p.matchPeek(token.SEMICOLON)
 	return stmt
 }
 
 func (p *Parser) parseReturnStmt() *ast.ReturnStmt {
 	stmt := &ast.ReturnStmt{Token: p.curToken}
-	// TODO: Fix later. Currently skip expressions until semicolon
-	p.nextToken()
-	stmt.ReturnValue = p.parseExpr(LOWEST)
-	p.matchPeek(token.SEMICOLON)
+	if p.peekToken.Type == token.SEMICOLON {
+		stmt.ReturnValue = nil
+	} else {
+		p.nextToken()
+		preExprLine := p.curToken.Line
+		preExprLineOffset := p.curToken.LineOffset
+		stmt.ReturnValue = p.parseExpr(LOWEST)
+		if stmt.ReturnValue == nil {
+			// if parseExpr failed, then we should report an error and move past semicolon
+			p.advancePast(token.SEMICOLON)
+			postExprLine := p.curToken.Line
+			postExprLineOffset := p.curToken.LineOffset
+			p.errors = append(p.errors,
+				ParserError{fmt.Sprintf("Invalid expression from %d:%d to %d:%d",
+					preExprLine, preExprLineOffset,
+					postExprLine, postExprLineOffset)})
+		} else if p.peekToken.Type != token.SEMICOLON {
+			p.errors = append(p.errors,
+				ParserError{fmt.Sprintf("Expected ';' after %q at line %d:%d",
+					p.curToken.Lexeme, p.peekToken.Line, p.peekToken.LineOffset)})
+			p.advancePast(token.SEMICOLON)
+		} else {
+			p.nextToken()
+		}
+	}
 	return stmt
+}
+
+func (p *Parser) advancePast(toktype token.TokenType) {
+	for p.peekToken.Type != token.SEMICOLON {
+		if p.peekToken.Type == token.EOF {
+			p.errors = append(p.errors,
+				ParserError{fmt.Sprintf("Expected to find %q before EOF", toktype)})
+			break
+		}
+		p.nextToken()
+	}
+	p.nextToken()
 }
 
 // Expression precedence definitions
@@ -146,6 +176,8 @@ const (
 func (p *Parser) parseExpr(prec Prec) ast.Expr {
 	prefix, found := p.prefixParseFns[p.curToken.Type]
 	if !found {
+		msg := fmt.Sprintf("no prefix parse function for %s found", p.curToken.Type)
+		p.errors = append(p.errors, ParserError{msg})
 		return nil
 	}
 	leftExp := prefix()
@@ -167,4 +199,11 @@ func (p *Parser) parseStr() ast.Expr {
 
 func (p *Parser) parseBool() ast.Expr {
 	return ast.BoolExpr{Token: p.curToken}
+}
+
+func (p *Parser) parsePrefixExpr() ast.Expr {
+	expr := &ast.PrefixExpr{Token: p.curToken}
+	p.nextToken()
+	expr.Right = p.parseExpr(PREFIX)
+	return expr
 }

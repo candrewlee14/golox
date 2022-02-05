@@ -30,7 +30,7 @@ var keywords map[string]TokenType = map[string]TokenType{
 
 // Lexer is used to tokenize source code
 type Lexer struct {
-	source     string
+	Source     string
 	lexStart   int
 	current    int
 	lineOffset int
@@ -45,7 +45,7 @@ func NewLexer(source string) Lexer {
 
 // Returns if lexer has reached the EOF
 func (s *Lexer) isAtEnd() bool {
-	return s.current >= len(s.source)
+	return s.current >= len(s.Source)
 }
 
 // Consumes and returns current char
@@ -53,7 +53,7 @@ func (s *Lexer) advance() byte {
 	if s.isAtEnd() {
 		return '\000'
 	}
-	c := s.source[s.current]
+	c := s.Source[s.current]
 	s.current++
 	s.lineOffset++
 	return c
@@ -65,16 +65,16 @@ func (s *Lexer) peek() byte {
 	if s.isAtEnd() {
 		return '\000'
 	}
-	return s.source[s.current]
+	return s.Source[s.current]
 }
 
 // Returns next char without consuming
 // Returns null char if EOF
 func (s *Lexer) peekNext() byte {
-	if s.current+1 >= len(s.source) {
+	if s.current+1 >= len(s.Source) {
 		return '\000'
 	}
-	return s.source[s.current+1]
+	return s.Source[s.current+1]
 }
 
 // Checks if current char matches given char and advances if so
@@ -82,7 +82,7 @@ func (s *Lexer) match(expected byte) bool {
 	if s.isAtEnd() {
 		return false
 	}
-	c := s.source[s.current]
+	c := s.Source[s.current]
 	if c != expected {
 		return false
 	}
@@ -92,13 +92,13 @@ func (s *Lexer) match(expected byte) bool {
 
 // Make new token of a given TokenType with nil content
 func (s *Lexer) newToken(toktype TokenType) Token {
-	lex := s.source[s.lexStart:s.current]
+	lex := s.Source[s.lexStart:s.current]
 	return NewToken(toktype, lex, s.line, s.lexStart-s.lineStart, nil)
 }
 
 // Make new token of a given TokenType with literal content
 func (s *Lexer) newTokenWithLiteral(toktype TokenType, val interface{}) Token {
-	lex := s.source[s.lexStart:s.current]
+	lex := s.Source[s.lexStart:s.current]
 	return NewToken(toktype, lex, s.line, s.lexStart-s.lineStart, val)
 }
 
@@ -224,7 +224,7 @@ func (s *Lexer) takeIdentifier() Token {
 	for isAlphaNumeric(s.peek()) {
 		s.advance()
 	}
-	txt := s.source[s.lexStart:s.current]
+	txt := s.Source[s.lexStart:s.current]
 	toktype, found := keywords[txt]
 	if found {
 		if toktype == TRUE {
@@ -251,7 +251,7 @@ func (s *Lexer) takeString() Token {
 		return s.newToken(INVALID)
 	}
 	s.advance()
-	str := s.source[s.lexStart+1 : s.current-1]
+	str := s.Source[s.lexStart+1 : s.current-1]
 	return s.newTokenWithLiteral(STRING, str)
 }
 
@@ -267,7 +267,7 @@ func (s *Lexer) takeNumber() Token {
 		}
 	}
 	// Error cannot be possible here since numbers are of form x or x.x
-	f, _ := strconv.ParseFloat(s.source[s.lexStart:s.current], 64)
+	f, _ := strconv.ParseFloat(s.Source[s.lexStart:s.current], 64)
 	return s.newTokenWithLiteral(NUMBER, f)
 }
 
