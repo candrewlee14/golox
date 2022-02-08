@@ -217,7 +217,14 @@ func (p *Parser) curPrec() Prec {
 func (p *Parser) parseExprStmt() *ast.ExprStmt {
 	stmt := &ast.ExprStmt{Token: p.curToken}
 	stmt.Expr = p.parseExpr(LOWEST)
-	p.advancePast(token.SEMICOLON)
+	if p.peekToken.Type != token.SEMICOLON {
+		p.errors = append(p.errors,
+			ParserError{fmt.Sprintf("Expected ';' after %q at line %d:%d",
+				p.curToken.Lexeme, p.peekToken.Line, p.peekToken.LineOffset)})
+		p.advancePast(token.SEMICOLON)
+	} else {
+		p.nextToken()
+	}
 	return stmt
 }
 
@@ -233,6 +240,8 @@ func (p *Parser) parseExpr(prec Prec) ast.Expr {
 	for p.peekToken.Type != token.SEMICOLON && prec < p.peekPrec() {
 		infix, found := p.infixParseFns[p.peekToken.Type]
 		if !found {
+			msg := fmt.Sprintf("no infix parse function for %s found", p.curToken.Type)
+			p.errors = append(p.errors, ParserError{msg})
 			return leftExp
 		}
 		p.nextToken()
