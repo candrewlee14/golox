@@ -44,6 +44,18 @@ func New(l *lexer.Lexer) *Parser {
 		token.BANG:       p.parsePrefixExpr,
 		token.MINUS:      p.parsePrefixExpr,
 	}
+	p.infixParseFns = map[token.TokenType]infixParseFn{
+		token.PLUS:          p.parseInfixExpr,
+		token.MINUS:         p.parseInfixExpr,
+		token.SLASH:         p.parseInfixExpr,
+		token.STAR:          p.parseInfixExpr,
+		token.EQUAL_EQUAL:   p.parseInfixExpr,
+		token.BANG_EQUAL:    p.parseInfixExpr,
+		token.LESS:          p.parseInfixExpr,
+		token.GREATER:       p.parseInfixExpr,
+		token.LESS_EQUAL:    p.parseInfixExpr,
+		token.GREATER_EQUAL: p.parseInfixExpr,
+	}
 
 	return p
 }
@@ -84,12 +96,13 @@ func (p *Parser) parseStatement() ast.Stmt {
 	case token.RETURN:
 		return p.parseReturnStmt()
 	default:
-		p.errors = append(p.errors,
-			ParserError{msg: fmt.Sprintf(
-				"Expected the beginning of a statement, like 'var x = 100' at line %d:%d. Got=%s",
-				p.curToken.Line, p.curToken.LineOffset, p.curToken.Type.String())})
-		p.advancePast(token.SEMICOLON)
-		return nil
+		return p.parseExprStmt()
+		// p.errors = append(p.errors,
+		// 	ParserError{msg: fmt.Sprintf(
+		// 		"Expected the beginning of a statement, like 'var x = 100' at line %d:%d. Got=%s",
+		// 		p.curToken.Line, p.curToken.LineOffset, p.curToken.Type.String())})
+		// p.advancePast(token.SEMICOLON)
+		// return nil
 	}
 }
 
@@ -174,6 +187,40 @@ const (
 	CALL        // myFunction(X)
 )
 
+var precedences = map[token.TokenType]Prec{
+	token.EQUAL_EQUAL:   EQUALS,
+	token.BANG_EQUAL:    EQUALS,
+	token.LESS:          LESSGREATER,
+	token.GREATER:       LESSGREATER,
+	token.LESS_EQUAL:    LESSGREATER,
+	token.GREATER_EQUAL: LESSGREATER,
+	token.PLUS:          SUM,
+	token.MINUS:         SUM,
+	token.SLASH:         PRODUCT,
+	token.STAR:          PRODUCT,
+}
+
+func (p *Parser) peekPrec() Prec {
+	if pr, ok := precedences[p.peekToken.Type]; ok {
+		return pr
+	}
+	return LOWEST
+}
+
+func (p *Parser) curPrec() Prec {
+	if pr, ok := precedences[p.curToken.Type]; ok {
+		return pr
+	}
+	return LOWEST
+}
+
+func (p *Parser) parseExprStmt() *ast.ExprStmt {
+	stmt := &ast.ExprStmt{Token: p.curToken}
+	stmt.Expr = p.parseExpr(LOWEST)
+	p.advancePast(token.SEMICOLON)
+	return stmt
+}
+
 func (p *Parser) parseExpr(prec Prec) ast.Expr {
 	prefix, found := p.prefixParseFns[p.curToken.Type]
 	if !found {
@@ -183,6 +230,14 @@ func (p *Parser) parseExpr(prec Prec) ast.Expr {
 	}
 	leftExp := prefix()
 
+	for p.peekToken.Type != token.SEMICOLON && prec < p.peekPrec() {
+		infix, found := p.infixParseFns[p.peekToken.Type]
+		if !found {
+			return leftExp
+		}
+		p.nextToken()
+		leftExp = infix(leftExp)
+	}
 	return leftExp
 }
 
@@ -206,5 +261,15 @@ func (p *Parser) parsePrefixExpr() ast.Expr {
 	expr := &ast.PrefixExpr{Token: p.curToken}
 	p.nextToken()
 	expr.Right = p.parseExpr(PREFIX)
+	return expr
+}
+func (p *Parser) parseInfixExpr(left ast.Expr) ast.Expr {
+	expr := &ast.InfixExpr{
+		Token: p.curToken,
+		Left:  left,
+	}
+	prec := p.curPrec()
+	p.nextToken()
+	expr.Right = p.parseExpr(prec)
 	return expr
 }

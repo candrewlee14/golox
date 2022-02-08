@@ -36,6 +36,18 @@ type Expr interface {
 	expressionNode()
 }
 
+// Expression Statement
+type ExprStmt struct {
+	Token token.Token // first token of expression
+	Expr  Expr
+}
+
+func (es ExprStmt) statementNode() {}
+func (es ExprStmt) String() string {
+	es.statementNode()
+	return es.Expr.String()
+}
+
 // Identifier is a variable or function name
 type Identifier struct {
 	Token token.Token // token.IDENT
@@ -89,6 +101,27 @@ func (p PrefixExpr) String() string {
 	out.WriteString("(")
 	out.WriteString(p.Token.Lexeme) // operator
 	out.WriteString(p.Right.String())
+	out.WriteString(")")
+
+	return out.String()
+}
+
+type InfixExpr struct {
+	Left  Expr
+	Token token.Token // binary operator token
+	Right Expr
+}
+
+func (ie InfixExpr) expressionNode() {}
+func (ie InfixExpr) String() string {
+	ie.expressionNode()
+	var out bytes.Buffer
+	out.WriteString("(")
+	out.WriteString(ie.Left.String())
+	out.WriteString(" ")
+	out.WriteString(ie.Token.Lexeme) // operator
+	out.WriteString(" ")
+	out.WriteString(ie.Right.String())
 	out.WriteString(")")
 
 	return out.String()

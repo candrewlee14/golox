@@ -332,3 +332,135 @@ func TestParsingPrefixExprs(t *testing.T) {
 		}
 	}
 }
+
+func TestParsingInfixExprs(t *testing.T) {
+	infixTests := []struct {
+		input    string
+		leftVal  interface{}
+		op       string
+		rightVal interface{}
+	}{
+		{"return 5 + 6;", 5.0, "+", 6.0},
+		{"return 5 - 6;", 5.0, "-", 6.0},
+		{"return 5 * 6;", 5.0, "*", 6.0},
+		{"return 5 / 6;", 5.0, "/", 6.0},
+		{"return 5 > 6;", 5.0, ">", 6.0},
+		{"return 5 < 6;", 5.0, "<", 6.0},
+		{"return 5 == 6;", 5.0, "==", 6.0},
+		{"return 5 != 6;", 5.0, "!=", 6.0},
+	}
+	for _, tt := range infixTests {
+		l := lexer.NewLexer(tt.input)
+		p := New(&l)
+		program := p.ParseProgram()
+		assertNoParserErrors(t, p)
+		if len(program.Statements) != 1 {
+			t.Fatalf("program.Statements does not contain %d statements. got=%d\n",
+				1, len(program.Statements))
+		}
+		stmt, ok := program.Statements[0].(*ast.ReturnStmt)
+		if !ok {
+			t.Fatalf("program.Statements[0] is not ast.ReturnStmt. got=%T",
+				program.Statements[0])
+		}
+		exp, ok := stmt.ReturnValue.(*ast.InfixExpr)
+		if !ok {
+			t.Fatalf("stmt is not ast.InfixExpr. got=%T", stmt.ReturnValue)
+		}
+		if exp.Token.Lexeme != tt.op {
+			t.Fatalf("exp.Operator is not '%s'. got=%s",
+				tt.op, exp.Token.Lexeme)
+		}
+		assertExprEq(t, tt.leftVal, exp.Left)
+		assertExprEq(t, tt.rightVal, exp.Right)
+	}
+}
+
+func assertExprEq(t *testing.T, expected interface{}, gotVal ast.Expr) {
+	switch gotVal.(type) {
+	case ast.NumExpr:
+		numExp, _ := gotVal.(ast.NumExpr)
+		if numExp.Token.Literal != expected {
+			t.Fatalf("numExp is not '%s'. got=%s",
+				expected, numExp.Token.Literal)
+		}
+	case ast.BoolExpr:
+		boolExp, _ := gotVal.(ast.BoolExpr)
+		if boolExp.Token.Literal != expected {
+			t.Fatalf("boolExp is not '%s'. got=%s",
+				expected, boolExp.Token.Literal)
+		}
+	default:
+		t.Fatalf("Expression was not a num or bool")
+	}
+}
+
+func TestOperatorPrecedenceParsing(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{
+			"-a * b;",
+			"((-a) * b)",
+		},
+		{
+			"!-a;",
+			"(!(-a))",
+		},
+		{
+			"a + b + c;",
+			"((a + b) + c)",
+		},
+		{
+			"a + b - c;",
+			"((a + b) - c)",
+		},
+		{
+			"a * b * c;",
+			"((a * b) * c)",
+		},
+		{
+			"a * b / c;",
+			"((a * b) / c)",
+		},
+		{
+			"a + b / c;",
+			"(a + (b / c))",
+		},
+		{
+			"a + b * c + d / e - f;",
+			"(((a + (b * c)) + (d / e)) - f)",
+		},
+		{
+			"3 + 4; -5 * 5;",
+			"(3 + 4)((-5) * 5)",
+		},
+		{
+			"5 > 4 == 3 < 4;",
+			"((5 > 4) == (3 < 4))",
+		},
+		{
+			"5 < 4 != 3 > 4;",
+			"((5 < 4) != (3 > 4))",
+		},
+		{
+			"3 + 4 * 5 == 3 * 1 + 4 * 5;",
+			"((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+		},
+		{
+			"3 + 4 * 5 == 3 * 1 + 4 * 5;",
+			"((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+		},
+	}
+	for _, tt := range tests {
+		l := lexer.NewLexer(tt.input)
+		p := New(&l)
+		program := p.ParseProgram()
+		assertNoParserErrors(t, p)
+		actual := program.String()
+		if actual != tt.expected {
+			t.Errorf("expected=%q, got=%q", tt.expected, actual)
+		}
+	}
+}
