@@ -333,13 +333,41 @@ func TestParsingPrefixExprs(t *testing.T) {
 	}
 }
 
+type InfixTest struct {
+	input    string
+	leftVal  interface{}
+	op       string
+	rightVal interface{}
+}
+
+func testReturnInfixExpr(t *testing.T, tt InfixTest) {
+	l := lexer.NewLexer(tt.input)
+	p := New(&l)
+	program := p.ParseProgram()
+	assertNoParserErrors(t, p)
+	if len(program.Statements) != 1 {
+		t.Fatalf("program.Statements does not contain %d statements. got=%d\n",
+			1, len(program.Statements))
+	}
+	stmt, ok := program.Statements[0].(*ast.ReturnStmt)
+	if !ok {
+		t.Fatalf("program.Statements[0] is not ast.ReturnStmt. got=%T",
+			program.Statements[0])
+	}
+	exp, ok := stmt.ReturnValue.(*ast.InfixExpr)
+	if !ok {
+		t.Fatalf("stmt is not ast.InfixExpr. got=%T", stmt.ReturnValue)
+	}
+	if exp.Token.Lexeme != tt.op {
+		t.Fatalf("exp.Operator is not '%s'. got=%s",
+			tt.op, exp.Token.Lexeme)
+	}
+	assertExprEq(t, tt.leftVal, exp.Left)
+	assertExprEq(t, tt.rightVal, exp.Right)
+}
+
 func TestParsingInfixExprs(t *testing.T) {
-	infixTests := []struct {
-		input    string
-		leftVal  interface{}
-		op       string
-		rightVal interface{}
-	}{
+	infixTests := []InfixTest{
 		{"return 5 + 6;", 5.0, "+", 6.0},
 		{"return 5 - 6;", 5.0, "-", 6.0},
 		{"return 5 * 6;", 5.0, "*", 6.0},
@@ -350,29 +378,7 @@ func TestParsingInfixExprs(t *testing.T) {
 		{"return 5 != 6;", 5.0, "!=", 6.0},
 	}
 	for _, tt := range infixTests {
-		l := lexer.NewLexer(tt.input)
-		p := New(&l)
-		program := p.ParseProgram()
-		assertNoParserErrors(t, p)
-		if len(program.Statements) != 1 {
-			t.Fatalf("program.Statements does not contain %d statements. got=%d\n",
-				1, len(program.Statements))
-		}
-		stmt, ok := program.Statements[0].(*ast.ReturnStmt)
-		if !ok {
-			t.Fatalf("program.Statements[0] is not ast.ReturnStmt. got=%T",
-				program.Statements[0])
-		}
-		exp, ok := stmt.ReturnValue.(*ast.InfixExpr)
-		if !ok {
-			t.Fatalf("stmt is not ast.InfixExpr. got=%T", stmt.ReturnValue)
-		}
-		if exp.Token.Lexeme != tt.op {
-			t.Fatalf("exp.Operator is not '%s'. got=%s",
-				tt.op, exp.Token.Lexeme)
-		}
-		assertExprEq(t, tt.leftVal, exp.Left)
-		assertExprEq(t, tt.rightVal, exp.Right)
+		testReturnInfixExpr(t, tt)
 	}
 }
 
@@ -500,5 +506,42 @@ func TestOperatorGroupParsing(t *testing.T) {
 		if actual != tt.expected {
 			t.Errorf("expected=%q, got=%q", tt.expected, actual)
 		}
+	}
+}
+
+func TestIfStmt(t *testing.T) {
+	input := `if (x < y) { z; }`
+	l := lexer.NewLexer(input)
+	p := New(&l)
+	program := p.ParseProgram()
+	assertNoParserErrors(t, p)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("program.Statements does not contain 1 statement, got=%d\n",
+			len(program.Statements))
+	}
+
+	stmt, ok := program.Statements[0].(*ast.IfStmt)
+	if !ok {
+		t.Fatalf("program.Statements[0] is not ast.IfStmt. got=%T",
+			program.Statements[0])
+	}
+	if len(stmt.OnTrue.Statements) != 1 {
+		t.Errorf("OnTrue is not 1 statement. got=%d\n",
+			len(stmt.OnTrue.Statements))
+	}
+	consequence, ok := stmt.OnTrue.Statements[0].(*ast.ExprStmt)
+	if !ok {
+		t.Fatalf("Statements[0] is not ast.ExprStmt. got=%T",
+			stmt.OnTrue.Statements[0])
+	}
+	if consequence.Expr.String() != "z" {
+		t.Fatalf("expected=x, got=%s", consequence.Expr)
+	}
+	// if !testIdentifier(t, consequence.Expr, "x") {
+	// 	return
+	// }
+	if stmt.OnFalse != nil {
+		t.Errorf("exp.Alternative.Statements was not nil. got=%+v", stmt.OnFalse)
 	}
 }

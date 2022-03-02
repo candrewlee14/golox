@@ -43,7 +43,7 @@ func New(l *lexer.Lexer) *Parser {
 		token.FALSE:      p.parseBool,
 		token.BANG:       p.parsePrefixExpr,
 		token.MINUS:      p.parsePrefixExpr,
-        token.LEFT_PAREN: p.parseGroupedExpr,
+		token.LEFT_PAREN: p.parseGroupedExpr,
 	}
 	p.infixParseFns = map[token.TokenType]infixParseFn{
 		token.PLUS:          p.parseInfixExpr,
@@ -94,6 +94,10 @@ func (p *Parser) parseStatement() ast.Stmt {
 	switch p.curToken.Type {
 	case token.VAR:
 		return p.parseVarStmt()
+	case token.LEFT_BRACE:
+		return p.parseBlockStmt()
+	case token.IF:
+		return p.parseIfStmt()
 	case token.RETURN:
 		return p.parseReturnStmt()
 	default:
@@ -115,6 +119,29 @@ func (p *Parser) matchPeek(t token.TokenType) bool {
 	return false
 }
 
+func (p *Parser) parseBlockStmt() *ast.BlockStmt {
+	p.nextToken()
+	fmt.Printf("cur: %s, next: %s\n", p.curToken.Type, p.peekToken.Type)
+
+	block := &ast.BlockStmt{}
+	block.Statements = []ast.Stmt{}
+
+	for p.curToken.Type != token.RIGHT_BRACE {
+		if p.curToken.Type == token.EOF {
+			p.addError(token.RIGHT_BRACE)
+			return block
+		}
+		stmt := p.parseStatement()
+		if stmt != nil {
+			block.Statements = append(block.Statements, stmt)
+		}
+		if p.curToken.Type != token.RIGHT_BRACE {
+			p.nextToken()
+		}
+	}
+	return block
+}
+
 func (p *Parser) parseVarStmt() *ast.VarStmt {
 	stmt := &ast.VarStmt{Token: p.curToken}
 	if !p.matchPeek(token.IDENTIFIER) {
@@ -129,6 +156,19 @@ func (p *Parser) parseVarStmt() *ast.VarStmt {
 	p.nextToken()
 	stmt.Value = p.parseExpr(LOWEST)
 	p.matchPeek(token.SEMICOLON)
+	return stmt
+}
+
+func (p *Parser) parseIfStmt() *ast.IfStmt {
+	stmt := &ast.IfStmt{Token: p.curToken}
+	p.nextToken()
+	stmt.Cond = p.parseExpr(LOWEST)
+	p.nextToken()
+	stmt.OnTrue = p.parseBlockStmt()
+
+	if p.matchPeek(token.ELSE) {
+		stmt.OnFalse = p.parseBlockStmt()
+	}
 	return stmt
 }
 
@@ -153,7 +193,7 @@ func (p *Parser) parseReturnStmt() *ast.ReturnStmt {
 					postExprLine, postExprLineOffset)})
 		} else if p.peekToken.Type != token.SEMICOLON {
 			p.errors = append(p.errors,
-				ParserError{fmt.Sprintf("Expected ';' after %q at line %d:%d",
+				ParserError{fmt.Sprintf("Expected \";\" after %q at line %d:%d",
 					p.curToken.Lexeme, p.peekToken.Line, p.peekToken.LineOffset)})
 			p.advancePast(token.SEMICOLON)
 		} else {
@@ -286,15 +326,15 @@ func (p *Parser) parseInfixExpr(left ast.Expr) ast.Expr {
 }
 
 func (p *Parser) parseGroupedExpr() ast.Expr {
-    p.nextToken()
-    exp := p.parseExpr(LOWEST)
-    if p.peekToken.Type != token.RIGHT_PAREN {
-        msg := fmt.Sprintf("expected ')', found %s", p.curToken.Type)
-        p.errors = append(p.errors, ParserError{msg})
-        p.advancePast(token.RIGHT_PAREN)
-        p.nextToken()
-        return nil 
-    }
-    p.nextToken()
-    return exp;
+	p.nextToken()
+	exp := p.parseExpr(LOWEST)
+	if p.peekToken.Type != token.RIGHT_PAREN {
+		msg := fmt.Sprintf("expected ')', found %s", p.curToken.Type)
+		p.errors = append(p.errors, ParserError{msg})
+		p.advancePast(token.RIGHT_PAREN)
+		p.nextToken()
+		return nil
+	}
+	p.nextToken()
+	return exp
 }

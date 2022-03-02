@@ -151,6 +151,48 @@ func (vs VarStmt) String() string {
 	return out.String()
 }
 
+type BlockStmt struct {
+	Token      token.Token // { token
+	Statements []Stmt
+}
+
+func (bs *BlockStmt) statementNode() {}
+func (bs BlockStmt) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("{")
+	for _, s := range bs.Statements {
+		out.WriteString(s.String())
+	}
+	out.WriteString("}")
+	return out.String()
+}
+
+// If Statement in the form of 'if (COND) {OnTrue} else {OnFalse}'
+type IfStmt struct {
+	Token   token.Token // IF token
+	Cond    Expr
+	OnTrue  *BlockStmt
+	OnFalse *BlockStmt
+}
+
+func (ifs IfStmt) statementNode() {}
+func (ifs IfStmt) String() string {
+	ifs.statementNode()
+	var out bytes.Buffer
+
+	out.WriteString("if ")
+	out.WriteString(ifs.Cond.String())
+	out.WriteString(" ")
+	out.WriteString(ifs.OnTrue.String())
+
+	if ifs.OnFalse != nil {
+		out.WriteString("else ")
+		out.WriteString(ifs.OnFalse.String())
+	}
+	return out.String()
+}
+
 // Return statement in the form 'return EXPR'
 type ReturnStmt struct {
 	Token       token.Token // return token
