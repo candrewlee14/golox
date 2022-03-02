@@ -43,6 +43,7 @@ func New(l *lexer.Lexer) *Parser {
 		token.FALSE:      p.parseBool,
 		token.BANG:       p.parsePrefixExpr,
 		token.MINUS:      p.parsePrefixExpr,
+        token.LEFT_PAREN: p.parseGroupedExpr,
 	}
 	p.infixParseFns = map[token.TokenType]infixParseFn{
 		token.PLUS:          p.parseInfixExpr,
@@ -134,6 +135,7 @@ func (p *Parser) parseVarStmt() *ast.VarStmt {
 func (p *Parser) parseReturnStmt() *ast.ReturnStmt {
 	stmt := &ast.ReturnStmt{Token: p.curToken}
 	if p.peekToken.Type == token.SEMICOLON {
+		p.nextToken()
 		stmt.ReturnValue = nil
 	} else {
 		p.nextToken()
@@ -281,4 +283,18 @@ func (p *Parser) parseInfixExpr(left ast.Expr) ast.Expr {
 	p.nextToken()
 	expr.Right = p.parseExpr(prec)
 	return expr
+}
+
+func (p *Parser) parseGroupedExpr() ast.Expr {
+    p.nextToken()
+    exp := p.parseExpr(LOWEST)
+    if p.peekToken.Type != token.RIGHT_PAREN {
+        msg := fmt.Sprintf("expected ')', found %s", p.curToken.Type)
+        p.errors = append(p.errors, ParserError{msg})
+        p.advancePast(token.RIGHT_PAREN)
+        p.nextToken()
+        return nil 
+    }
+    p.nextToken()
+    return exp;
 }
