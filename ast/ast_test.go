@@ -98,3 +98,113 @@ func TestReturnString(t *testing.T) {
 		}
 	}
 }
+
+var funcDeclProgram *Program = &Program{
+	Statements: []Stmt{
+		&FuncDeclStmt{
+			Token: token.Token{Type: token.FUN, Lexeme: "fun"},
+			Name: &Identifier{
+				Token: token.Token{Type: token.IDENTIFIER, Lexeme: "FunctionName"},
+			},
+			Params: []*Identifier{
+				&Identifier{
+					Token: token.Token{Type: token.IDENTIFIER, Lexeme: "x"},
+				},
+				&Identifier{
+					Token: token.Token{Type: token.IDENTIFIER, Lexeme: "y"},
+				},
+				&Identifier{
+					Token: token.Token{Type: token.IDENTIFIER, Lexeme: "z"},
+				},
+			},
+			Body: &BlockStmt{
+				Token: token.Token{Type: token.LEFT_BRACE, Lexeme: "{"},
+				Statements: []Stmt{
+					&ReturnStmt{
+						Token: token.Token{Type: token.RETURN, Lexeme: "return"},
+						ReturnValue: &Identifier{
+							Token: token.Token{Type: token.IDENTIFIER, Lexeme: "x"},
+						},
+					},
+				},
+			},
+		},
+	},
+}
+
+func TestFuncDeclString(t *testing.T) {
+	expectedStr := `fun FunctionName(x, y, z) {return x;}`
+	if funcDeclProgram.String() != expectedStr {
+		t.Fatalf("Function declaration statement String mismatch. Expected: %q, got=%q",
+			expectedStr, funcDeclProgram)
+	}
+}
+
+var exprProgram *Program = &Program{
+	Statements: []Stmt{
+		&ExprStmt{
+			Token: token.Token{Type: token.IDENTIFIER, Lexeme: "testIdent"},
+			Expr: &PrefixExpr{
+				Token: token.Token{Type: token.MINUS, Lexeme: "-"},
+				Right: &InfixExpr{
+					Left: &Identifier{
+						Token: token.Token{Type: token.IDENTIFIER, Lexeme: "testIdent"},
+					},
+					Token: token.Token{Type: token.PLUS, Lexeme: "+"},
+					Right: &NumExpr{
+						Token: token.Token{Type: token.NUMBER, Lexeme: "10"},
+					},
+				},
+			},
+		},
+	},
+}
+
+func TestExprStmtString(t *testing.T) {
+	expectedStr := `(-(testIdent + 10))`
+	if exprProgram.String() != expectedStr {
+		t.Fatalf("Expression statement String mismatch. Expected: %q, got=%q",
+			expectedStr, exprProgram)
+	}
+}
+
+var ifProgram *Program = &Program{
+	Statements: []Stmt{
+		&IfStmt{
+			Token: token.Token{Type: token.IF, Lexeme: "if"},
+			Cond: &Identifier{
+				Token: token.Token{Type: token.IDENTIFIER, Lexeme: "condition"},
+			},
+			OnTrue: &BlockStmt{
+				Token: token.Token{Type: token.LEFT_BRACE, Lexeme: "{"},
+				Statements: []Stmt{
+					&ReturnStmt{
+						Token: token.Token{Type: token.RETURN, Lexeme: "return"},
+						ReturnValue: &Identifier{
+							Token: token.Token{Type: token.IDENTIFIER, Lexeme: "x"},
+						},
+					},
+				},
+			},
+			OnFalse: &BlockStmt{
+				Token: token.Token{Type: token.LEFT_BRACE, Lexeme: "{"},
+				Statements: []Stmt{
+					&ReturnStmt{
+						Token: token.Token{Type: token.RETURN, Lexeme: "return"},
+						ReturnValue: &Identifier{
+							Token: token.Token{Type: token.IDENTIFIER, Lexeme: "y"},
+						},
+					},
+				},
+			},
+		},
+	},
+}
+
+func TestIfStmtString(t *testing.T) {
+	expectedStr := `if condition {return x;} else {return y;}`
+	if ifProgram.String() != expectedStr {
+		t.Fatalf("If statement String mismatch. Expected: %q, got=%q",
+			expectedStr, ifProgram)
+	}
+}

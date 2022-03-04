@@ -90,10 +90,26 @@ func (p *Parser) ParseProgram() *ast.Program {
 	return program
 }
 
+// func (p *Parser) sync() {
+// 	for p.curToken.Type != token.EOF {
+// 		if p.curToken.Type == token.SEMICOLON {
+// 			p.nextToken()
+// 			return
+// 		}
+// 		switch p.curToken.Type {
+// 		case token.CLASS, token.FUN, token.VAR, token.FOR, token.IF, token.WHILE, token.PRINT, token.RETURN:
+// 			return
+// 		}
+// 		p.nextToken()
+// 	}
+// }
+
 func (p *Parser) parseStatement() ast.Stmt {
 	switch p.curToken.Type {
 	case token.VAR:
 		return p.parseVarStmt()
+	case token.FUN:
+		return p.parseFuncDeclStmt()
 	case token.LEFT_BRACE:
 		return p.parseBlockStmt()
 	case token.IF:
@@ -102,12 +118,6 @@ func (p *Parser) parseStatement() ast.Stmt {
 		return p.parseReturnStmt()
 	default:
 		return p.parseExprStmt()
-		// p.errors = append(p.errors,
-		// 	ParserError{msg: fmt.Sprintf(
-		// 		"Expected the beginning of a statement, like 'var x = 100' at line %d:%d. Got=%s",
-		// 		p.curToken.Line, p.curToken.LineOffset, p.curToken.Type.String())})
-		// p.advancePast(token.SEMICOLON)
-		// return nil
 	}
 }
 
@@ -119,9 +129,64 @@ func (p *Parser) matchPeek(t token.TokenType) bool {
 	return false
 }
 
+func (p *Parser) parseFuncDeclStmt() *ast.FuncDeclStmt {
+	stmt := &ast.FuncDeclStmt{Token: p.curToken}
+	p.nextToken()
+	if p.curToken.Type != token.IDENTIFIER {
+		p.errors = append(p.errors,
+			ParserError{fmt.Sprintf("Expected function name identifier, got %s", p.curToken.Type)})
+		p.advancePast(token.RIGHT_BRACE)
+		return nil
+	}
+	ident := p.parseIdent().(ast.Identifier)
+	stmt.Name = &ident
+	p.nextToken()
+	if p.curToken.Type != token.LEFT_PAREN {
+		p.errors = append(p.errors,
+			ParserError{fmt.Sprintf("Expected \"(\" after \"fun\".")})
+		p.advancePast(token.RIGHT_BRACE)
+		return nil
+	}
+	p.nextToken()
+	for p.curToken.Type != token.RIGHT_PAREN {
+		if p.curToken.Type == token.EOF {
+			p.errors = append(p.errors,
+				ParserError{fmt.Sprintf("Expected \")\", found end of file instead.")})
+			return nil
+		}
+		if p.curToken.Type == token.IDENTIFIER {
+			param := p.parseIdent().(ast.Identifier)
+			stmt.Params = append(stmt.Params,
+				&param)
+		} else {
+			p.errors = append(p.errors,
+				ParserError{fmt.Sprintf("Expected parameter identifier, found %s", p.curToken.Type)})
+			p.advancePast(token.RIGHT_BRACE)
+			return nil
+		}
+		p.nextToken()
+		if p.curToken.Type == token.COMMA {
+			p.nextToken()
+			continue
+		} else if p.curToken.Type == token.RIGHT_PAREN {
+			p.nextToken()
+			break
+		} else {
+			p.errors = append(p.errors,
+				ParserError{fmt.Sprintf("Expected comma separating parameter identifiers, found %s", p.curToken.Type)})
+			p.advancePast(token.RIGHT_BRACE)
+			return nil
+		}
+	}
+
+	blockStmt := p.parseBlockStmt()
+	stmt.Body = blockStmt
+
+	return stmt
+}
+
 func (p *Parser) parseBlockStmt() *ast.BlockStmt {
 	p.nextToken()
-	fmt.Printf("cur: %s, next: %s\n", p.curToken.Type, p.peekToken.Type)
 
 	block := &ast.BlockStmt{}
 	block.Statements = []ast.Stmt{}

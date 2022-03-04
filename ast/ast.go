@@ -48,6 +48,33 @@ func (es ExprStmt) String() string {
 	return es.Expr.String()
 }
 
+// Expression Statement
+type FuncDeclStmt struct {
+	Token  token.Token // first token of expression
+	Name   *Identifier
+	Params []*Identifier
+	Body   *BlockStmt
+}
+
+func (fs FuncDeclStmt) statementNode() {}
+func (fs FuncDeclStmt) String() string {
+	fs.statementNode()
+	var out bytes.Buffer
+	out.WriteString("fun ")
+	out.WriteString(fs.Name.String())
+	out.WriteString("(")
+	for i, p := range fs.Params {
+		out.WriteString(p.String())
+		if i < len(fs.Params)-1 {
+			out.WriteString(", ")
+		}
+	}
+	out.WriteString(") ")
+	out.WriteString(fs.Body.String())
+
+	return out.String()
+}
+
 // Identifier is a variable or function name
 type Identifier struct {
 	Token token.Token // token.IDENT
@@ -187,7 +214,7 @@ func (ifs IfStmt) String() string {
 	out.WriteString(ifs.OnTrue.String())
 
 	if ifs.OnFalse != nil {
-		out.WriteString("else ")
+		out.WriteString(" else ")
 		out.WriteString(ifs.OnFalse.String())
 	}
 	return out.String()

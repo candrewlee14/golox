@@ -471,6 +471,12 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 	}
 }
 
+func testIdentifier(t *testing.T, ident ast.Identifier, expectedStr string) {
+	if ident.Token.Lexeme != expectedStr {
+		t.Errorf("Identifier didn't match. Expected: %q, got: %q", expectedStr, ident.Token.Lexeme)
+	}
+}
+
 func TestOperatorGroupParsing(t *testing.T) {
 	tests := []struct {
 		input    string
@@ -538,10 +544,35 @@ func TestIfStmt(t *testing.T) {
 	if consequence.Expr.String() != "z" {
 		t.Fatalf("expected=x, got=%s", consequence.Expr)
 	}
-	// if !testIdentifier(t, consequence.Expr, "x") {
-	// 	return
-	// }
 	if stmt.OnFalse != nil {
 		t.Errorf("exp.Alternative.Statements was not nil. got=%+v", stmt.OnFalse)
 	}
+}
+
+func TestFunDeclStmt(t *testing.T) {
+	input := `fun FunctionName(x,y,z) {return x * y;}`
+	l := lexer.NewLexer(input)
+	p := New(&l)
+	program := p.ParseProgram()
+	assertNoParserErrors(t, p)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("program.Statements does not contain 1 statement, got=%d\n",
+			len(program.Statements))
+	}
+
+	stmt, ok := program.Statements[0].(*ast.FuncDeclStmt)
+	if !ok {
+		t.Fatalf("program.Statements[0] is not ast.FuncDeclStmt. got=%T",
+			program.Statements[0])
+	}
+	testIdentifier(t, *stmt.Name, "FunctionName")
+	if len(stmt.Params) != 3 {
+		t.Errorf("Expected 3 params. got=%d\n",
+			len(stmt.Params))
+	}
+	testIdentifier(t, *stmt.Params[0], "x")
+	testIdentifier(t, *stmt.Params[1], "y")
+	testIdentifier(t, *stmt.Params[2], "z")
+	// TODO: test body content
 }
