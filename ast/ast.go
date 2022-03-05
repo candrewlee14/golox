@@ -220,6 +220,26 @@ func (ifs IfStmt) String() string {
 	return out.String()
 }
 
+// If Statement in the form of 'if (COND) {OnTrue} else {OnFalse}'
+type WhileStmt struct {
+	Token token.Token // IF token
+	Cond  Expr
+	Body  *BlockStmt
+}
+
+func (ws WhileStmt) statementNode() {}
+func (ws WhileStmt) String() string {
+	ws.statementNode()
+	var out bytes.Buffer
+
+	out.WriteString("while ")
+	out.WriteString(ws.Cond.String())
+	out.WriteString(" ")
+	out.WriteString(ws.Body.String())
+
+	return out.String()
+}
+
 // Return statement in the form 'return EXPR'
 type ReturnStmt struct {
 	Token       token.Token // return token

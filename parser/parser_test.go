@@ -516,7 +516,7 @@ func TestOperatorGroupParsing(t *testing.T) {
 }
 
 func TestIfStmt(t *testing.T) {
-	input := `if (x < y) { z; }`
+	input := `if (x < y) { z; } else { x; }`
 	l := lexer.NewLexer(input)
 	p := New(&l)
 	program := p.ParseProgram()
@@ -532,6 +532,12 @@ func TestIfStmt(t *testing.T) {
 		t.Fatalf("program.Statements[0] is not ast.IfStmt. got=%T",
 			program.Statements[0])
 	}
+
+	if stmt.Cond.String() != "(x < y)" {
+		t.Errorf("Condition mismatch. Expected=%q, got=%q\n",
+			"(x < y)", stmt.Cond)
+	}
+
 	if len(stmt.OnTrue.Statements) != 1 {
 		t.Errorf("OnTrue is not 1 statement. got=%d\n",
 			len(stmt.OnTrue.Statements))
@@ -544,8 +550,45 @@ func TestIfStmt(t *testing.T) {
 	if consequence.Expr.String() != "z" {
 		t.Fatalf("expected=x, got=%s", consequence.Expr)
 	}
-	if stmt.OnFalse != nil {
-		t.Errorf("exp.Alternative.Statements was not nil. got=%+v", stmt.OnFalse)
+
+	alt, ok := stmt.OnFalse.Statements[0].(*ast.ExprStmt)
+	if !ok {
+		t.Fatalf("Statements[0] is not ast.ExprStmt. got=%T",
+			stmt.OnFalse.Statements[0])
+	}
+	if alt.Expr.String() != "x" {
+		t.Fatalf("expected=x, got=%s", alt.Expr)
+	}
+}
+
+func TestWhileStmt(t *testing.T) {
+	input := `while (x < y) { z; }`
+	l := lexer.NewLexer(input)
+	p := New(&l)
+	program := p.ParseProgram()
+	assertNoParserErrors(t, p)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("program.Statements does not contain 1 statement, got=%d\n",
+			len(program.Statements))
+	}
+
+	stmt, ok := program.Statements[0].(*ast.WhileStmt)
+	if !ok {
+		t.Fatalf("program.Statements[0] is not ast.WhileStmt. got=%T",
+			program.Statements[0])
+	}
+	if len(stmt.Body.Statements) != 1 {
+		t.Errorf("Body is not 1 statement. got=%d\n",
+			len(stmt.Body.Statements))
+	}
+	consequence, ok := stmt.Body.Statements[0].(*ast.ExprStmt)
+	if !ok {
+		t.Fatalf("Statements[0] is not ast.ExprStmt. got=%T",
+			stmt.Body.Statements[0])
+	}
+	if consequence.Expr.String() != "z" {
+		t.Fatalf("expected=x, got=%s", consequence.Expr)
 	}
 }
 

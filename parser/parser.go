@@ -114,6 +114,8 @@ func (p *Parser) parseStatement() ast.Stmt {
 		return p.parseBlockStmt()
 	case token.IF:
 		return p.parseIfStmt()
+	case token.WHILE:
+		return p.parseWhileStmt()
 	case token.RETURN:
 		return p.parseReturnStmt()
 	default:
@@ -232,8 +234,18 @@ func (p *Parser) parseIfStmt() *ast.IfStmt {
 	stmt.OnTrue = p.parseBlockStmt()
 
 	if p.matchPeek(token.ELSE) {
+		p.nextToken()
 		stmt.OnFalse = p.parseBlockStmt()
 	}
+	return stmt
+}
+
+func (p *Parser) parseWhileStmt() *ast.WhileStmt {
+	stmt := &ast.WhileStmt{Token: p.curToken}
+	p.nextToken()
+	stmt.Cond = p.parseExpr(LOWEST)
+	p.nextToken()
+	stmt.Body = p.parseBlockStmt()
 	return stmt
 }
 

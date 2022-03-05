@@ -208,3 +208,33 @@ func TestIfStmtString(t *testing.T) {
 			expectedStr, ifProgram)
 	}
 }
+
+var whileProgram *Program = &Program{
+	Statements: []Stmt{
+		&WhileStmt{
+			Token: token.Token{Type: token.IF, Lexeme: "if"},
+			Cond: &Identifier{
+				Token: token.Token{Type: token.IDENTIFIER, Lexeme: "condition"},
+			},
+			Body: &BlockStmt{
+				Token: token.Token{Type: token.LEFT_BRACE, Lexeme: "{"},
+				Statements: []Stmt{
+					&ReturnStmt{
+						Token: token.Token{Type: token.RETURN, Lexeme: "return"},
+						ReturnValue: &Identifier{
+							Token: token.Token{Type: token.IDENTIFIER, Lexeme: "x"},
+						},
+					},
+				},
+			},
+		},
+	},
+}
+
+func TestWhileStmtString(t *testing.T) {
+	expectedStr := `while condition {return x;}`
+	if whileProgram.String() != expectedStr {
+		t.Fatalf("If statement String mismatch. Expected: %q, got=%q",
+			expectedStr, whileProgram)
+	}
+}
