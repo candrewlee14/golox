@@ -99,6 +99,38 @@ func TestReturnString(t *testing.T) {
 	}
 }
 
+var funcCallProgram *Program = &Program{
+	Statements: []Stmt{
+		&ExprStmt{
+			Expr: &CallExpr{
+				Token: token.Token{Type: token.IDENTIFIER, Lexeme: "FunctionName"},
+				Function: &Identifier{
+					Token: token.Token{Type: token.IDENTIFIER, Lexeme: "FunctionName"},
+				},
+				Args: []Expr{
+					&Identifier{
+						Token: token.Token{Type: token.IDENTIFIER, Lexeme: "x"},
+					},
+					&NumExpr{
+						Token: token.Token{Type: token.NUMBER, Lexeme: "10"},
+					},
+					&Identifier{
+						Token: token.Token{Type: token.IDENTIFIER, Lexeme: "z"},
+					},
+				},
+			},
+		},
+	},
+}
+
+func TestFuncCallString(t *testing.T) {
+	expectedStr := `FunctionName(x, 10, z)`
+	if funcCallProgram.String() != expectedStr {
+		t.Fatalf("Function call String mismatch. Expected: %q, got=%q",
+			expectedStr, funcCallProgram)
+	}
+}
+
 var funcDeclProgram *Program = &Program{
 	Statements: []Stmt{
 		&FuncDeclStmt{

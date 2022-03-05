@@ -133,6 +133,29 @@ func (p PrefixExpr) String() string {
 	return out.String()
 }
 
+type CallExpr struct {
+	Token    token.Token // return token
+	Function *Identifier
+	Args     []Expr
+}
+
+func (ce CallExpr) expressionNode() {}
+func (ce CallExpr) String() string {
+	ce.expressionNode()
+	var out bytes.Buffer
+	out.WriteString(ce.Function.String())
+	out.WriteString("(")
+	for i, a := range ce.Args {
+		out.WriteString(a.String())
+		if i < len(ce.Args)-1 {
+			out.WriteString(", ")
+		}
+	}
+	out.WriteString(")")
+
+	return out.String()
+}
+
 type InfixExpr struct {
 	Left  Expr
 	Token token.Token // binary operator token

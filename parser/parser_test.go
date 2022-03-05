@@ -619,3 +619,44 @@ func TestFunDeclStmt(t *testing.T) {
 	testIdentifier(t, *stmt.Params[2], "z")
 	// TODO: test body content
 }
+
+func TestFunCallStmt(t *testing.T) {
+	input := `return FunctionName(x,10,z);`
+	l := lexer.NewLexer(input)
+	p := New(&l)
+	program := p.ParseProgram()
+	assertNoParserErrors(t, p)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("program.Statements does not contain 1 statement, got=%d\n",
+			len(program.Statements))
+	}
+
+	stmt, ok := program.Statements[0].(*ast.ReturnStmt)
+	if !ok {
+		t.Fatalf("program.Statements[0] is not *ast.ReturnStmt. got=%T",
+			program.Statements[0])
+	}
+	funCall, ok := stmt.ReturnValue.(*ast.CallExpr)
+	if !ok {
+		t.Fatalf("Return value is not *ast.CallExpr. got=%T",
+			program.Statements[0])
+	}
+	if len(funCall.Args) != 3 {
+		t.Errorf("Expected 3 args. got=%d\n",
+			len(funCall.Args))
+	}
+	if funCall.Args[0].String() != "x" {
+		t.Errorf("First param mismatch. Expected=%s, got=%s\n",
+			"x", funCall.Args[0])
+	}
+	if funCall.Args[1].String() != "10" {
+		t.Errorf("Second param mismatch. Expected=%s, got=%s\n",
+			"10", funCall.Args[1])
+	}
+	if funCall.Args[2].String() != "z" {
+		t.Errorf("Third param mismatch. Expected=%s, got=%s\n",
+			"z", funCall.Args[2])
+	}
+	// TODO: test arg types
+}

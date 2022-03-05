@@ -56,6 +56,7 @@ func New(l *lexer.Lexer) *Parser {
 		token.GREATER:       p.parseInfixExpr,
 		token.LESS_EQUAL:    p.parseInfixExpr,
 		token.GREATER_EQUAL: p.parseInfixExpr,
+		token.LEFT_PAREN:    p.parseCallExpr,
 	}
 
 	return p
@@ -105,13 +106,16 @@ func (p *Parser) ParseProgram() *ast.Program {
 // }
 
 func (p *Parser) parseStatement() ast.Stmt {
+	// if p.curToken.Type == token.IDENTIFIER && p.peekToken.Type == token.LEFT_PAREN {
+	//     return p.parseCallExpr()
+	// }
 	switch p.curToken.Type {
 	case token.VAR:
 		return p.parseVarStmt()
 	case token.FUN:
 		return p.parseFuncDeclStmt()
-	case token.LEFT_BRACE:
-		return p.parseBlockStmt()
+	// case token.LEFT_BRACE:
+	// 	return p.parseBlockStmt()
 	case token.IF:
 		return p.parseIfStmt()
 	case token.WHILE:
@@ -129,6 +133,44 @@ func (p *Parser) matchPeek(t token.TokenType) bool {
 		return true
 	}
 	return false
+}
+
+func (p *Parser) parseCallExpr(funcExpr ast.Expr) ast.Expr {
+	// because Lox doesn't have lambdas, we know the function call is a identifier
+	funcIdent, ok := funcExpr.(ast.Identifier)
+	if !ok {
+		p.errors = append(p.errors,
+			ParserError{fmt.Sprintf("Expected function identifier, got %t", funcExpr)})
+		p.advancePast(token.RIGHT_BRACE)
+		return nil
+	}
+	callExpr := &ast.CallExpr{Token: funcIdent.Token, Function: &funcIdent}
+	// we know curToken is LEFT_PAREN because the map infixParseFns
+	p.nextToken()
+	for p.curToken.Type != token.RIGHT_PAREN {
+		if p.curToken.Type == token.EOF {
+			p.errors = append(p.errors,
+				ParserError{fmt.Sprintf("Expected \")\", found end of file instead.")})
+			return nil
+		}
+		arg := p.parseExpr(LOWEST)
+		callExpr.Args = append(callExpr.Args,
+			arg)
+
+		p.nextToken()
+		if p.curToken.Type == token.COMMA {
+			p.nextToken()
+			continue
+		} else if p.curToken.Type == token.RIGHT_PAREN {
+			break
+		} else {
+			p.errors = append(p.errors,
+				ParserError{fmt.Sprintf("Expected comma separating argument identifiers, found %s", p.curToken.Type)})
+			p.advancePast(token.SEMICOLON)
+			return nil
+		}
+	}
+	return callExpr
 }
 
 func (p *Parser) parseFuncDeclStmt() *ast.FuncDeclStmt {
@@ -317,6 +359,7 @@ var precedences = map[token.TokenType]Prec{
 	token.MINUS:         SUM,
 	token.SLASH:         PRODUCT,
 	token.STAR:          PRODUCT,
+	token.LEFT_PAREN:    CALL,
 }
 
 func (p *Parser) peekPrec() Prec {
@@ -333,9 +376,14 @@ func (p *Parser) curPrec() Prec {
 	return LOWEST
 }
 
+// Parsing any type of expression should end on the last token of the expression
+// So peekToken after parsing all of a exprStmt should be semicolon
+
 func (p *Parser) parseExprStmt() *ast.ExprStmt {
 	stmt := &ast.ExprStmt{Token: p.curToken}
 	stmt.Expr = p.parseExpr(LOWEST)
+	// This no longer works correctly because function calls
+	// will both need a prefix function after the semicolon
 	if p.peekToken.Type != token.SEMICOLON {
 		p.errors = append(p.errors,
 			ParserError{fmt.Sprintf("Expected ';' after %q at line %d:%d",
@@ -355,7 +403,6 @@ func (p *Parser) parseExpr(prec Prec) ast.Expr {
 		return nil
 	}
 	leftExp := prefix()
-
 	for p.peekToken.Type != token.SEMICOLON && prec < p.peekPrec() {
 		infix, found := p.infixParseFns[p.peekToken.Type]
 		if !found {
