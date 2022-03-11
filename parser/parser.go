@@ -196,6 +196,8 @@ func (p *Parser) parseFuncDeclStmt() *ast.FuncDeclStmt {
 		return nil
 	}
 	p.nextToken()
+	paramNames := make(map[string]struct{})
+	exists := struct{}{}
 	for p.curToken.Type != token.RIGHT_PAREN {
 		if p.curToken.Type == token.EOF {
 			p.errors = append(p.errors,
@@ -206,6 +208,14 @@ func (p *Parser) parseFuncDeclStmt() *ast.FuncDeclStmt {
 			param := p.parseIdent().(ast.Identifier)
 			stmt.Params = append(stmt.Params,
 				&param)
+			_, dup := paramNames[param.String()]
+			if dup {
+				p.errors = append(p.errors,
+					ParserError{fmt.Sprintf("Found duplicate parameter identifier %q for function %q", param, stmt.Name)})
+			} else {
+				paramNames[param.String()] = exists
+			}
+
 		} else {
 			p.errors = append(p.errors,
 				ParserError{fmt.Sprintf("Expected parameter identifier, found %s", p.curToken.Type)})

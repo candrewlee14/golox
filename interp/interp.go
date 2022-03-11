@@ -2,33 +2,18 @@ package interp
 
 import (
 	"fmt"
-	"github.com/fatih/color"
 	"golox/ast"
 	"golox/obj"
 	"golox/token"
 )
 
-type Env struct {
-	Bindings map[string]obj.Obj
-}
-
-func (e *Env) PrintColored() {
-	for key, elem := range e.Bindings {
-		fmt.Println(color.CyanString("%s", key), "=", elem)
-	}
-}
-
-func newEnv() Env {
-	bindings := make(map[string]obj.Obj)
-	return Env{Bindings: bindings}
-}
-
 type Interpreter struct {
-	EnvStack []Env
+	EnvStack []*obj.Env
 }
 
 func New() Interpreter {
-	return Interpreter{EnvStack: []Env{newEnv()}}
+	baseEnv := obj.NewEnv()
+	return Interpreter{EnvStack: []*obj.Env{&baseEnv}}
 }
 func (intp *Interpreter) PrintEnv() {
 	i := len(intp.EnvStack) - 1
@@ -40,7 +25,7 @@ func (intp *Interpreter) PrintEnv() {
 }
 
 func (intp *Interpreter) bind(name string, val obj.Obj) {
-	intp.EnvStack[len(intp.EnvStack)-1].bind(name, val)
+	intp.EnvStack[len(intp.EnvStack)-1].Bind(name, val)
 }
 func (intp *Interpreter) assign(name string, val obj.Obj) {
 	i := len(intp.EnvStack) - 1
@@ -55,25 +40,16 @@ func (intp *Interpreter) assign(name string, val obj.Obj) {
 	panic(fmt.Sprintf("Variable %q does not exist in this scope. Use \"var %s = ...;\" to declare instead.", name, name))
 }
 
-func (intp *Interpreter) resolve(name string) (obj.Obj, bool) {
+func (intp *Interpreter) resolve(name *string) obj.Obj {
 	i := len(intp.EnvStack) - 1
 	for i >= 0 {
-		val, ok := intp.EnvStack[i].Bindings[name]
+		val, ok := intp.EnvStack[i].Bindings[*name]
 		if ok {
-			return val, true
+			return val
 		}
 		i--
 	}
-	return nil, false
-}
-
-func (e *Env) bind(name string, val obj.Obj) {
-	_, bound := e.Bindings[name]
-	if !bound {
-		e.Bindings[name] = val
-	} else {
-		panic(fmt.Sprintf("Variable %q already exists in this scope. Use \"%s = ...;\" to assign instead.", name, name))
-	}
+	panic(fmt.Sprintf("Variable %q does not exist in this scope.", *name))
 }
 
 func (intp *Interpreter) Eval(node ast.Node) obj.Obj {
@@ -84,9 +60,11 @@ func (intp *Interpreter) Eval(node ast.Node) obj.Obj {
 	case *ast.ExprStmt:
 		return intp.Eval(node.Expr)
 	case *ast.ReturnStmt:
+		// TODO: exit the function scope
 		return intp.Eval(node.ReturnValue)
 	case *ast.BlockStmt:
-		intp.EnvStack = append(intp.EnvStack, newEnv())
+		newEnv := obj.NewEnv()
+		intp.EnvStack = append(intp.EnvStack, &newEnv)
 		defer func() { intp.EnvStack = intp.EnvStack[:len(intp.EnvStack)-1] }()
 		val := intp.evalStmts(node.Statements)
 		return val
@@ -99,10 +77,14 @@ func (intp *Interpreter) Eval(node ast.Node) obj.Obj {
 			_ = intp.Eval(node.Body)
 		}
 		return nil
+	case *ast.FuncDeclStmt:
+		closure := &obj.Closure{EnvStack: intp.EnvStack, Params: node.Params, Body: node.Body}
+		intp.bind(node.Name.String(), closure)
+		return nil
 	case *ast.VarStmt:
 		val := intp.Eval(node.Value)
 		intp.bind(node.Name.String(), val)
-		return &obj.Nil{}
+		return nil
 	case *ast.IfStmt:
 		cond := intp.Eval(node.Cond)
 		if isTruthy(cond) {
@@ -117,10 +99,7 @@ func (intp *Interpreter) Eval(node ast.Node) obj.Obj {
 		fl, _ := node.Token.Literal.(float64)
 		return &obj.Num{Value: fl}
 	case ast.Identifier:
-		val, found := intp.resolve(node.Token.Lexeme)
-		if !found {
-			panic(fmt.Sprintf("Variable %q is not declared in this scope.", node.Token.Lexeme))
-		}
+		val := intp.resolve(&node.Token.Lexeme)
 		return val
 	case ast.NilExpr:
 		return &obj.Nil{}
@@ -134,6 +113,25 @@ func (intp *Interpreter) Eval(node ast.Node) obj.Obj {
 		return intp.evalPrefix(node)
 	case *ast.InfixExpr:
 		return intp.evalInfix(node)
+	case *ast.CallExpr:
+		name := &node.Token.Lexeme
+		o := intp.resolve(name)
+		closure, isClos := o.(*obj.Closure)
+		if !isClos {
+			panic(fmt.Sprintf("Unable to call variable %q (of type %T) as a function.", *name, o))
+		}
+		if len(node.Args) != len(closure.Params) {
+			panic(fmt.Sprintf("Function %q expects %d arguments, got %d instead", *name, len(closure.Params), len(node.Args)))
+		}
+		localCallEnv := obj.NewEnv()
+		for i, arg := range node.Args {
+			val := intp.Eval(arg)
+			localCallEnv.Bindings[closure.Params[i].String()] = val
+		}
+		envStack := append(closure.EnvStack, &localCallEnv)
+		funcIntp := Interpreter{EnvStack: envStack}
+		ret := funcIntp.Eval(closure.Body)
+		return ret
 	}
 	panic(fmt.Sprintf("Unable to evaluate unexpected expression, got: %T", node))
 }
