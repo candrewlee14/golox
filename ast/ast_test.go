@@ -270,3 +270,33 @@ func TestWhileStmtString(t *testing.T) {
 			expectedStr, whileProgram)
 	}
 }
+
+var whileProgramWithNil *Program = &Program{
+	Statements: []Stmt{
+		&WhileStmt{
+			Token: token.Token{Type: token.IF, Lexeme: "if"},
+			Cond: &Identifier{
+				Token: token.Token{Type: token.IDENTIFIER, Lexeme: "condition"},
+			},
+			Body: &BlockStmt{
+				Token: token.Token{Type: token.LEFT_BRACE, Lexeme: "{"},
+				Statements: []Stmt{
+					&ReturnStmt{
+						Token: token.Token{Type: token.RETURN, Lexeme: "return"},
+						ReturnValue: &NilExpr{
+							Token: token.Token{Type: token.NIL, Lexeme: "nil"},
+						},
+					},
+				},
+			},
+		},
+	},
+}
+
+func TestWhileStmtStringWithNil(t *testing.T) {
+	expectedStr := `while condition {return nil;}`
+	if whileProgramWithNil.String() != expectedStr {
+		t.Fatalf("If statement String mismatch. Expected: %q, got=%q",
+			expectedStr, whileProgramWithNil)
+	}
+}

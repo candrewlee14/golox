@@ -96,6 +96,16 @@ func (n NumExpr) String() string {
 	return n.Token.Lexeme
 }
 
+type NilExpr struct {
+	Token token.Token // NIL token
+}
+
+func (n NilExpr) expressionNode() {}
+func (n NilExpr) String() string {
+	n.expressionNode()
+	return n.Token.Lexeme
+}
+
 type StrExpr struct {
 	Token token.Token // STRING token
 }

@@ -22,6 +22,8 @@ func Eval(node ast.Node) obj.Obj {
 	case ast.NumExpr:
 		fl, _ := node.Token.Literal.(float64)
 		return &obj.Num{Value: fl}
+	case ast.NilExpr:
+		return &obj.Nil{}
 	case ast.StrExpr:
 		str, _ := node.Token.Literal.(string)
 		return &obj.Str{Value: str}
@@ -116,6 +118,7 @@ func isEq(a obj.Obj, b obj.Obj) bool {
 		return a.Value == bs.Value
 	case *obj.Nil:
 		_, bIsNil := b.(*obj.Nil)
+		fmt.Println("HEY")
 		if !bIsNil {
 			return false
 		}

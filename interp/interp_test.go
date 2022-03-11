@@ -111,6 +111,36 @@ func TestNumTrueEq(t *testing.T) {
 	testInfixNeqExpr(t, numTrueEq, true)
 }
 
+var nilTrueEq *ast.InfixExpr = &ast.InfixExpr{
+	Left: ast.NilExpr{
+		Token: token.Token{Type: token.NIL, Lexeme: "nil"},
+	},
+	Token: token.Token{Type: token.EQUAL_EQUAL, Lexeme: "=="},
+	Right: ast.BoolExpr{
+		Token: token.Token{Type: token.TRUE, Lexeme: "true", Literal: true},
+	},
+}
+
+func TestNilTrueEq(t *testing.T) {
+	testExprBool(t, nilTrueEq, false)
+	testInfixNeqExpr(t, nilTrueEq, true)
+}
+
+var nilNilEq *ast.InfixExpr = &ast.InfixExpr{
+	Left: ast.NilExpr{
+		Token: token.Token{Type: token.NIL, Lexeme: "nil"},
+	},
+	Token: token.Token{Type: token.EQUAL_EQUAL, Lexeme: "=="},
+	Right: ast.NilExpr{
+		Token: token.Token{Type: token.NIL, Lexeme: "nil"},
+	},
+}
+
+func TestNilNilTrueEq(t *testing.T) {
+	testExprBool(t, nilNilEq, true)
+	testInfixNeqExpr(t, nilNilEq, false)
+}
+
 var strStrMatchEq *ast.InfixExpr = &ast.InfixExpr{
 	Left: ast.StrExpr{
 		Token: token.Token{Type: token.STRING, Lexeme: "yeet", Literal: "yeet"},
@@ -244,4 +274,15 @@ var notBool *ast.PrefixExpr = &ast.PrefixExpr{
 
 func TestNotBool(t *testing.T) {
 	testExprBool(t, notBool, false)
+}
+
+var notNil *ast.PrefixExpr = &ast.PrefixExpr{
+	Token: token.Token{Type: token.BANG, Lexeme: "!"},
+	Right: ast.NilExpr{
+		Token: token.Token{Type: token.NIL, Lexeme: "nil"},
+	},
+}
+
+func TestNotNil(t *testing.T) {
+	testExprBool(t, notNil, true)
 }

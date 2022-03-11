@@ -38,6 +38,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.prefixParseFns = map[token.TokenType]prefixParseFn{
 		token.IDENTIFIER: p.parseIdent,
 		token.NUMBER:     p.parseNum,
+		token.NIL:        p.parseNil,
 		token.STRING:     p.parseStr,
 		token.TRUE:       p.parseBool,
 		token.FALSE:      p.parseBool,
@@ -422,6 +423,10 @@ func (p *Parser) parseIdent() ast.Expr {
 
 func (p *Parser) parseNum() ast.Expr {
 	return ast.NumExpr{Token: p.curToken}
+}
+
+func (p *Parser) parseNil() ast.Expr {
+	return ast.NilExpr{Token: p.curToken}
 }
 
 func (p *Parser) parseStr() ast.Expr {
