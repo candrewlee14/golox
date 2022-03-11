@@ -293,10 +293,37 @@ var whileProgramWithNil *Program = &Program{
 	},
 }
 
-func TestWhileStmtStringWithNil(t *testing.T) {
+func TestWhileNilString(t *testing.T) {
 	expectedStr := `while condition {return nil;}`
 	if whileProgramWithNil.String() != expectedStr {
-		t.Fatalf("If statement String mismatch. Expected: %q, got=%q",
+		t.Fatalf("While statement String mismatch. Expected: %q, got=%q",
 			expectedStr, whileProgramWithNil)
+	}
+}
+
+var assignProg *Program = &Program{
+	Statements: []Stmt{
+		&AssignStmt{
+			Name: Identifier{
+				Token: token.Token{Type: token.IDENTIFIER, Lexeme: "x"},
+			},
+			Expr: &InfixExpr{
+				Left: Identifier{
+					Token: token.Token{Type: token.IDENTIFIER, Lexeme: "x"},
+				},
+				Token: token.Token{Type: token.PLUS, Lexeme: "+"},
+				Right: NumExpr{
+					Token: token.Token{Type: token.NUMBER, Lexeme: "1", Literal: 1.0},
+				},
+			},
+		},
+	},
+}
+
+func TestAssignProgString(t *testing.T) {
+	expectedStr := `x = (x + 1);`
+	if assignProg.String() != expectedStr {
+		t.Fatalf("Assignment statement String mismatch. Expected: %q, got=%q",
+			expectedStr, assignProg)
 	}
 }

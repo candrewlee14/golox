@@ -11,7 +11,8 @@ import (
 )
 
 func testExprBool(t *testing.T, node ast.Node, res bool) {
-	val := Eval(node)
+	intp := New()
+	val := intp.Eval(node)
 	vb, ok := val.(*obj.Bool)
 	if !ok {
 		t.Fatalf("Expected result of *obj.Bool, got: %T", val)
@@ -21,7 +22,8 @@ func testExprBool(t *testing.T, node ast.Node, res bool) {
 	}
 }
 func testExprNum(t *testing.T, node ast.Node, res float64) {
-	val := Eval(node)
+	intp := New()
+	val := intp.Eval(node)
 	vb, ok := val.(*obj.Num)
 	if !ok {
 		t.Fatalf("Expected result of *obj.Num, got: %T", val)

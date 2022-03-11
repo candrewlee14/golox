@@ -115,8 +115,8 @@ func (p *Parser) parseStatement() ast.Stmt {
 		return p.parseVarStmt()
 	case token.FUN:
 		return p.parseFuncDeclStmt()
-	// case token.LEFT_BRACE:
-	// 	return p.parseBlockStmt()
+	case token.LEFT_BRACE:
+		return p.parseBlockStmt()
 	case token.IF:
 		return p.parseIfStmt()
 	case token.WHILE:
@@ -124,6 +124,9 @@ func (p *Parser) parseStatement() ast.Stmt {
 	case token.RETURN:
 		return p.parseReturnStmt()
 	default:
+		if p.curToken.Type == token.IDENTIFIER && p.peekToken.Type == token.EQUAL {
+			return p.parseAssignStmt()
+		}
 		return p.parseExprStmt()
 	}
 }
@@ -292,6 +295,22 @@ func (p *Parser) parseWhileStmt() *ast.WhileStmt {
 	return stmt
 }
 
+func (p *Parser) parseAssignStmt() *ast.AssignStmt {
+	stmt := &ast.AssignStmt{Name: ast.Identifier{Token: p.curToken}}
+	p.nextToken()
+	p.nextToken() // pass over the EQUAL token
+	stmt.Expr = p.parseExpr(LOWEST)
+	if p.peekToken.Type != token.SEMICOLON {
+		p.errors = append(p.errors,
+			ParserError{fmt.Sprintf("Expected ';' after %q at line %d:%d",
+				p.curToken.Lexeme, p.peekToken.Line, p.peekToken.LineOffset)})
+		p.advancePast(token.SEMICOLON)
+	} else {
+		p.nextToken()
+	}
+	return stmt
+}
+
 func (p *Parser) parseReturnStmt() *ast.ReturnStmt {
 	stmt := &ast.ReturnStmt{Token: p.curToken}
 	if p.peekToken.Type == token.SEMICOLON {
@@ -327,7 +346,7 @@ func (p *Parser) advancePast(toktype token.TokenType) {
 	for p.peekToken.Type != token.SEMICOLON {
 		if p.peekToken.Type == token.EOF {
 			p.errors = append(p.errors,
-				ParserError{fmt.Sprintf("Expected to find %q before EOF", toktype)})
+				ParserError{fmt.Sprintf("Expected to find %s before EOF", toktype)})
 			break
 		}
 		p.nextToken()

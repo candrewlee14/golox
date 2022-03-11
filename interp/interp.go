@@ -2,26 +2,126 @@ package interp
 
 import (
 	"fmt"
+	"github.com/fatih/color"
 	"golox/ast"
 	"golox/obj"
 	"golox/token"
 )
 
-func Eval(node ast.Node) obj.Obj {
+type Env struct {
+	Bindings map[string]obj.Obj
+}
+
+func (e *Env) PrintColored() {
+	for key, elem := range e.Bindings {
+		fmt.Println(color.CyanString("%s", key), "=", elem)
+	}
+}
+
+func newEnv() Env {
+	bindings := make(map[string]obj.Obj)
+	return Env{Bindings: bindings}
+}
+
+type Interpreter struct {
+	EnvStack []Env
+}
+
+func New() Interpreter {
+	return Interpreter{EnvStack: []Env{newEnv()}}
+}
+func (intp *Interpreter) PrintEnv() {
+	i := len(intp.EnvStack) - 1
+	for i >= 0 {
+		fmt.Println("-----")
+		intp.EnvStack[i].PrintColored()
+		i--
+	}
+}
+
+func (intp *Interpreter) bind(name string, val obj.Obj) {
+	intp.EnvStack[len(intp.EnvStack)-1].bind(name, val)
+}
+func (intp *Interpreter) assign(name string, val obj.Obj) {
+	i := len(intp.EnvStack) - 1
+	for i >= 0 {
+		_, ok := intp.EnvStack[i].Bindings[name]
+		if ok {
+			intp.EnvStack[i].Bindings[name] = val
+			return
+		}
+		i--
+	}
+	panic(fmt.Sprintf("Variable %q does not exist in this scope. Use \"var %s = ...;\" to declare instead.", name, name))
+}
+
+func (intp *Interpreter) resolve(name string) (obj.Obj, bool) {
+	i := len(intp.EnvStack) - 1
+	for i >= 0 {
+		val, ok := intp.EnvStack[i].Bindings[name]
+		if ok {
+			return val, true
+		}
+		i--
+	}
+	return nil, false
+}
+
+func (e *Env) bind(name string, val obj.Obj) {
+	_, bound := e.Bindings[name]
+	if !bound {
+		e.Bindings[name] = val
+	} else {
+		panic(fmt.Sprintf("Variable %q already exists in this scope. Use \"%s = ...;\" to assign instead.", name, name))
+	}
+}
+
+func (intp *Interpreter) Eval(node ast.Node) obj.Obj {
 	switch node := node.(type) {
 	// Statements
 	case *ast.Program:
-		return evalStmts(node.Statements)
+		return intp.evalStmts(node.Statements)
 	case *ast.ExprStmt:
-		return Eval(node.Expr)
+		return intp.Eval(node.Expr)
 	case *ast.ReturnStmt:
-		return Eval(node.ReturnValue)
+		return intp.Eval(node.ReturnValue)
+	case *ast.BlockStmt:
+		intp.EnvStack = append(intp.EnvStack, newEnv())
+		defer func() { intp.EnvStack = intp.EnvStack[:len(intp.EnvStack)-1] }()
+		val := intp.evalStmts(node.Statements)
+		return val
+	case *ast.AssignStmt:
+		intp.assign(node.Name.String(), intp.Eval(node.Expr))
+		return nil
+	case *ast.WhileStmt:
+		// TODO: work out what should be truthy here
+		for isTruthy(intp.Eval(node.Cond)) {
+			_ = intp.Eval(node.Body)
+		}
+		return nil
 	case *ast.VarStmt:
-		return Eval(node.Value)
+		val := intp.Eval(node.Value)
+		intp.bind(node.Name.String(), val)
+		return &obj.Nil{}
+	case *ast.IfStmt:
+		cond := intp.Eval(node.Cond)
+		if isTruthy(cond) {
+			return intp.Eval(node.OnTrue)
+		} else if node.OnFalse != nil {
+			return intp.Eval(node.OnFalse)
+		} else {
+			return nil
+		}
 	// Expressions
 	case ast.NumExpr:
 		fl, _ := node.Token.Literal.(float64)
 		return &obj.Num{Value: fl}
+	case ast.Identifier:
+		val, found := intp.resolve(node.Token.Lexeme)
+		if !found {
+			panic(fmt.Sprintf("Variable %q is not declared in this scope.", node.Token.Lexeme))
+		}
+		return val
 	case ast.NilExpr:
 		return &obj.Nil{}
 	case ast.StrExpr:
@@ -31,23 +131,23 @@ func Eval(node ast.Node) obj.Obj {
 		b, _ := node.Token.Literal.(bool)
 		return &obj.Bool{Value: b}
 	case *ast.PrefixExpr:
-		return evalPrefix(node)
+		return intp.evalPrefix(node)
 	case *ast.InfixExpr:
-		return evalInfix(node)
+		return intp.evalInfix(node)
 	}
 	panic(fmt.Sprintf("Unable to evaluate unexpected expression, got: %T", node))
 }
 
-func evalStmts(stmts []ast.Stmt) obj.Obj {
+func (intp *Interpreter) evalStmts(stmts []ast.Stmt) obj.Obj {
 	var result obj.Obj
 	for _, stmt := range stmts {
-		result = Eval(stmt)
+		result = intp.Eval(stmt)
 	}
 	return result
 }
 
-func evalPrefix(pe *ast.PrefixExpr) obj.Obj {
-	r := Eval(pe.Right)
+func (intp *Interpreter) evalPrefix(pe *ast.PrefixExpr) obj.Obj {
+	r := intp.Eval(pe.Right)
 	switch pe.Token.Type {
 	case token.BANG:
 		return &obj.Bool{Value: !isTruthy(r)}
@@ -58,9 +158,9 @@ func evalPrefix(pe *ast.PrefixExpr) obj.Obj {
 	panic(fmt.Sprintf("Expected prefix operator, got: %s", pe.Token.Type))
 }
 
-func evalInfix(ie *ast.InfixExpr) obj.Obj {
-	l := Eval(ie.Left)
-	r := Eval(ie.Right)
+func (intp *Interpreter) evalInfix(ie *ast.InfixExpr) obj.Obj {
+	l := intp.Eval(ie.Left)
+	r := intp.Eval(ie.Right)
 	switch ie.Token.Type {
 	case token.PLUS:
 		return &obj.Num{Value: resolveNum(l).Value + resolveNum(r).Value}
@@ -118,7 +218,6 @@ func isEq(a obj.Obj, b obj.Obj) bool {
 		return a.Value == bs.Value
 	case *obj.Nil:
 		_, bIsNil := b.(*obj.Nil)
-		fmt.Println("HEY")
 		if !bIsNil {
 			return false
 		}

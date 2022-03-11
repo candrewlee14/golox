@@ -9,7 +9,6 @@ import (
 	"golox/lexer"
 	"golox/token"
 	"testing"
-	//"reflect"
 )
 
 type VarTest struct {
@@ -659,4 +658,66 @@ func TestFunCallStmt(t *testing.T) {
 			"z", funCall.Args[2])
 	}
 	// TODO: test arg types
+}
+
+func TestAssignStmt(t *testing.T) {
+	input := `x = 100;`
+	l := lexer.NewLexer(input)
+	p := New(&l)
+	program := p.ParseProgram()
+	assertNoParserErrors(t, p)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("program.Statements does not contain 1 statement, got=%d\n",
+			len(program.Statements))
+	}
+
+	stmt, ok := program.Statements[0].(*ast.AssignStmt)
+	if !ok {
+		t.Fatalf("program.Statements[0] is not *ast.AssignStmt. got=%T",
+			program.Statements[0])
+	}
+	if stmt.Name.String() != "x" {
+		t.Fatalf("Assignment name mismatch. Expected=%s, got=%T",
+			"x", stmt.Name)
+	}
+	fmt.Printf("%T", stmt.Expr)
+	num, ok := stmt.Expr.(ast.NumExpr)
+	if !ok {
+		t.Fatalf("Assignment value is not *ast.NumExpr. got=%T",
+			stmt.Expr)
+	}
+	if num.String() != "100" {
+		t.Fatalf("Assignment value mismatch. Expected=%s, got=%T",
+			"100", num.String())
+	}
+}
+
+func TestAssignNilStmt(t *testing.T) {
+	input := `x = nil;`
+	l := lexer.NewLexer(input)
+	p := New(&l)
+	program := p.ParseProgram()
+	assertNoParserErrors(t, p)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("program.Statements does not contain 1 statement, got=%d\n",
+			len(program.Statements))
+	}
+
+	stmt, ok := program.Statements[0].(*ast.AssignStmt)
+	if !ok {
+		t.Fatalf("program.Statements[0] is not *ast.AssignStmt. got=%T",
+			program.Statements[0])
+	}
+	if stmt.Name.String() != "x" {
+		t.Fatalf("Assignment name mismatch. Expected=%s, got=%T",
+			"x", stmt.Name)
+	}
+	fmt.Printf("%T", stmt.Expr)
+	_, isNil := stmt.Expr.(ast.NilExpr)
+	if !isNil {
+		t.Fatalf("Assignment value is not ast.NilExpr. got=%T",
+			stmt.Expr)
+	}
 }
