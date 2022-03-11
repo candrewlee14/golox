@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"golox/interp"
 	"golox/lexer"
 	"golox/parser"
 	"golox/report"
@@ -21,9 +22,13 @@ func Run(source string) {
 			fmt.Printf("Error: %s\n", e)
 		}
 	} else {
-		for _, stmt := range prog.Statements {
-			fmt.Println(stmt)
-		}
+		defer func() {
+			if err := recover(); err != nil {
+				fmt.Println("Error occurred:", err)
+			}
+		}()
+		obj := interp.Eval(prog)
+		fmt.Println(obj)
 	}
 }
 
