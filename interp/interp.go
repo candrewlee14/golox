@@ -32,7 +32,7 @@ func (intp *Interpreter) assign(name string, val obj.Obj) {
 	for i >= 0 {
 		_, ok := intp.EnvStack[i].Bindings[name]
 		if ok {
-			intp.EnvStack[i].Bindings[name] = val
+			intp.EnvStack[i].Bindings[name].Ref = &val
 			return
 		}
 		i--
@@ -45,7 +45,7 @@ func (intp *Interpreter) resolve(name *string) obj.Obj {
 	for i >= 0 {
 		val, ok := intp.EnvStack[i].Bindings[*name]
 		if ok {
-			return val
+			return *val.Ref
 		}
 		i--
 	}
@@ -56,25 +56,24 @@ func (intp *Interpreter) Eval(node ast.Node) obj.Obj {
 	switch node := node.(type) {
 	// Statements
 	case *ast.Program:
-		return intp.evalStmts(node.Statements)
+		return intp.evalStmts(node.Statements, false)
 	case *ast.ExprStmt:
 		return intp.Eval(node.Expr)
 	case *ast.ReturnStmt:
-		// TODO: exit the function scope
-		return intp.Eval(node.ReturnValue)
+		return &obj.RetVal{Val: intp.Eval(node.ReturnValue)}
 	case *ast.BlockStmt:
-		newEnv := obj.NewEnv()
-		intp.EnvStack = append(intp.EnvStack, newEnv)
-		defer func() { intp.EnvStack = intp.EnvStack[:len(intp.EnvStack)-1] }()
-		val := intp.evalStmts(node.Statements)
-		return val
+		return intp.evalBlock(node, true)
 	case *ast.AssignStmt:
 		intp.assign(node.Name.String(), intp.Eval(node.Expr))
 		return nil
 	case *ast.WhileStmt:
 		// TODO: work out what should be truthy here
 		for isTruthy(intp.Eval(node.Cond)) {
-			_ = intp.Eval(node.Body)
+			result := intp.evalBlock(node.Body, true)
+			retVal, isRetVal := result.(*obj.RetVal)
+			if isRetVal {
+				return retVal
+			}
 		}
 		return nil
 	case *ast.FuncDeclStmt:
@@ -99,9 +98,9 @@ func (intp *Interpreter) Eval(node ast.Node) obj.Obj {
 	case *ast.IfStmt:
 		cond := intp.Eval(node.Cond)
 		if isTruthy(cond) {
-			return intp.Eval(node.OnTrue)
+			return intp.evalBlock(node.OnTrue, true)
 		} else if node.OnFalse != nil {
-			return intp.Eval(node.OnFalse)
+			return intp.evalBlock(node.OnFalse, true)
 		} else {
 			return nil
 		}
@@ -137,22 +136,38 @@ func (intp *Interpreter) Eval(node ast.Node) obj.Obj {
 		localCallEnv := obj.NewEnv()
 		for i, arg := range node.Args {
 			val := intp.Eval(arg)
-			localCallEnv.Bindings[closure.Params[i].String()] = val
+			localCallEnv.Bind(closure.Params[i].String(), val)
 		}
 		funcEnvStack := append(closure.EnvStack, localCallEnv)
 		funcIntp := Interpreter{EnvStack: funcEnvStack}
-		ret := funcIntp.Eval(closure.Body)
+		ret := funcIntp.evalBlock(closure.Body, false)
 		return ret
 	}
 	panic(fmt.Sprintf("Unable to evaluate unexpected expression, got: %T", node))
 }
 
-func (intp *Interpreter) evalStmts(stmts []ast.Stmt) obj.Obj {
+func (intp *Interpreter) evalBlock(bs *ast.BlockStmt, bubbleReturn bool) obj.Obj {
+	newEnv := obj.NewEnv()
+	intp.EnvStack = append(intp.EnvStack, newEnv)
+	defer func() { intp.EnvStack = intp.EnvStack[:len(intp.EnvStack)-1] }()
+	val := intp.evalStmts(bs.Statements, bubbleReturn)
+	return val
+}
+
+func (intp *Interpreter) evalStmts(stmts []ast.Stmt, bubbleReturn bool) obj.Obj {
 	var result obj.Obj
 	for _, stmt := range stmts {
 		result = intp.Eval(stmt)
+		retVal, isRetVal := result.(*obj.RetVal)
+		if isRetVal {
+			if bubbleReturn {
+				return retVal
+			} else {
+				return retVal.Val
+			}
+		}
 	}
-	return result
+	return nil
 }
 
 func (intp *Interpreter) evalPrefix(pe *ast.PrefixExpr) obj.Obj {

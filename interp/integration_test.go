@@ -18,7 +18,7 @@ func TestCallExpr(t *testing.T) {
             }
             return i;
         }
-        FunctionName(10 - 3, 4 - 2, 5 - 3);`
+        return FunctionName(10 - 3, 4 - 2, 5 - 3);`
 	l := lexer.NewLexer(input)
 	p := parser.New(&l)
 	program := p.ParseProgram()
@@ -40,7 +40,7 @@ func TestFib(t *testing.T) {
             }
             return f;
         }
-        fib(10);`
+        return fib(10);`
 	l := lexer.NewLexer(input)
 	p := parser.New(&l)
 	program := p.ParseProgram()
@@ -65,7 +65,7 @@ func TestFibNestedReturn(t *testing.T) {
             }
             return f;
         }
-        fib(0);`
+        return fib(0);`
 	l := lexer.NewLexer(input)
 	p := parser.New(&l)
 	program := p.ParseProgram()
@@ -78,7 +78,7 @@ func TestFuncScope(t *testing.T) {
             return x;
         }
         var x = 100 + 3;
-        testFun();`
+        return testFun();`
 	l := lexer.NewLexer(input)
 	p := parser.New(&l)
 	program := p.ParseProgram()
@@ -100,7 +100,7 @@ func TestFuncScopeModification(t *testing.T) {
             return x;
         }
         x = 10;
-        testFun();`
+        return testFun();`
 	l := lexer.NewLexer(input)
 	p := parser.New(&l)
 	program := p.ParseProgram()

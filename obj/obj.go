@@ -8,24 +8,28 @@ import (
 )
 
 type Env struct {
-	Bindings map[string]Obj
+	Bindings map[string]*Box
+}
+
+type Box struct {
+	Ref *Obj
 }
 
 func (e *Env) PrintColored() {
 	for key, elem := range e.Bindings {
-		fmt.Println(color.CyanString("%s", key), "=", elem)
+		fmt.Println(color.CyanString("%s", key), "=", color.YellowString("boxed"), *elem.Ref)
 	}
 }
 
 func NewEnv() Env {
-	bindings := make(map[string]Obj)
+	bindings := make(map[string]*Box)
 	return Env{Bindings: bindings}
 }
 
 func (e *Env) Bind(name string, val Obj) {
 	_, bound := e.Bindings[name]
 	if !bound {
-		e.Bindings[name] = val
+		e.Bindings[name] = &Box{&val}
 	} else {
 		panic(fmt.Sprintf("Variable %q already exists in this scope. Use \"%s = ...;\" to assign instead.", name, name))
 	}
@@ -44,6 +48,7 @@ const (
 	BOOL_OBJ
 	STR_OBJ
 	CLOSURE_OBJ
+	RET_VAL_OBJ
 )
 
 type Nil struct{}
@@ -71,6 +76,13 @@ func (c *Closure) String() string {
 	out.WriteString(c.Body.String())
 	return out.String()
 }
+
+type RetVal struct {
+	Val Obj
+}
+
+func (rv *RetVal) Type() ObjType  { return RET_VAL_OBJ }
+func (rv *RetVal) String() string { return "ret " + fmt.Sprint(rv.Val) }
 
 type Num struct {
 	Value float64
