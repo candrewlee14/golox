@@ -86,3 +86,24 @@ func TestFibNestedReturn(t *testing.T) {
 	program := p.ParseProgram()
 	testExprNum(t, program, 0)
 }
+
+func TestFuncScope(t *testing.T) {
+	input := `
+        fun testFun() {
+            return x;
+        }
+        var x = 100 + 3;
+        testFun();`
+	l := lexer.NewLexer(input)
+	p := parser.New(&l)
+	program := p.ParseProgram()
+	defer func() {
+		if err := recover(); err != nil {
+			return
+		}
+	}()
+	intp := interp.New()
+	val := intp.Eval(program) // This should error for this function
+	intp.PrintEnv()
+	t.Fatalf("Program should not have x in scope, should've been runtime error. Instead returned %q", val)
+}
