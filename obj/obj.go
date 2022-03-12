@@ -52,7 +52,7 @@ func (n *Nil) Type() ObjType  { return NIL_OBJ }
 func (n *Nil) String() string { return "nil" }
 
 type Closure struct {
-	EnvStack []*Env
+	EnvStack []Env
 	Params   []*ast.Identifier
 	Body     *ast.BlockStmt
 }

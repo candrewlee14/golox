@@ -1,28 +1,13 @@
 //go:build integration
 // +build integration
 
-package tests
+package interp
 
 import (
-	"golox/ast"
-	"golox/interp"
 	"golox/lexer"
-	"golox/obj"
 	"golox/parser"
 	"testing"
 )
-
-func testExprNum(t *testing.T, node ast.Node, res float64) {
-	intp := interp.New()
-	val := intp.Eval(node)
-	vb, ok := val.(*obj.Num)
-	if !ok {
-		t.Fatalf("Expected result of *obj.Num, got: %T", val)
-	}
-	if vb.Value != res {
-		t.Fatalf("Expected num result to be %f, got: %f", res, vb.Value)
-	}
-}
 
 // Integration Test
 func TestCallExpr(t *testing.T) {
@@ -102,8 +87,22 @@ func TestFuncScope(t *testing.T) {
 			return
 		}
 	}()
-	intp := interp.New()
+	intp := New()
 	val := intp.Eval(program) // This should error for this function
 	intp.PrintEnv()
 	t.Fatalf("Program should not have x in scope, should've been runtime error. Instead returned %q", val)
+}
+
+func TestFuncScopeModification(t *testing.T) {
+	input := `
+        var x = 100 + 3;
+        fun testFun() {
+            return x;
+        }
+        x = 10;
+        testFun();`
+	l := lexer.NewLexer(input)
+	p := parser.New(&l)
+	program := p.ParseProgram()
+	testExprNum(t, program, 10.0)
 }

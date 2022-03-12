@@ -8,12 +8,12 @@ import (
 )
 
 type Interpreter struct {
-	EnvStack []*obj.Env
+	EnvStack []obj.Env
 }
 
 func New() Interpreter {
 	baseEnv := obj.NewEnv()
-	return Interpreter{EnvStack: []*obj.Env{&baseEnv}}
+	return Interpreter{EnvStack: []obj.Env{baseEnv}}
 }
 func (intp *Interpreter) PrintEnv() {
 	i := len(intp.EnvStack) - 1
@@ -64,7 +64,7 @@ func (intp *Interpreter) Eval(node ast.Node) obj.Obj {
 		return intp.Eval(node.ReturnValue)
 	case *ast.BlockStmt:
 		newEnv := obj.NewEnv()
-		intp.EnvStack = append(intp.EnvStack, &newEnv)
+		intp.EnvStack = append(intp.EnvStack, newEnv)
 		defer func() { intp.EnvStack = intp.EnvStack[:len(intp.EnvStack)-1] }()
 		val := intp.evalStmts(node.Statements)
 		return val
@@ -78,7 +78,14 @@ func (intp *Interpreter) Eval(node ast.Node) obj.Obj {
 		}
 		return nil
 	case *ast.FuncDeclStmt:
-		closure := &obj.Closure{EnvStack: intp.EnvStack, Params: node.Params, Body: node.Body}
+		closEnvStack := make([]obj.Env, len(intp.EnvStack))
+		for i, env := range intp.EnvStack {
+			closEnvStack[i] = obj.NewEnv()
+			for k, v := range env.Bindings {
+				closEnvStack[i].Bindings[k] = v
+			}
+		}
+		closure := &obj.Closure{EnvStack: closEnvStack, Params: node.Params, Body: node.Body}
 		intp.bind(node.Name.String(), closure)
 		return nil
 	case *ast.VarStmt:
@@ -132,8 +139,8 @@ func (intp *Interpreter) Eval(node ast.Node) obj.Obj {
 			val := intp.Eval(arg)
 			localCallEnv.Bindings[closure.Params[i].String()] = val
 		}
-		envStack := append(closure.EnvStack, &localCallEnv)
-		funcIntp := Interpreter{EnvStack: envStack}
+		funcEnvStack := append(closure.EnvStack, localCallEnv)
+		funcIntp := Interpreter{EnvStack: funcEnvStack}
 		ret := funcIntp.Eval(closure.Body)
 		return ret
 	}

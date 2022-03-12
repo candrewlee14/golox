@@ -29,12 +29,11 @@ func Run(source string, intp *interp.Interpreter, show bool) {
 			}
 		}()
 		if show {
-			fmt.Print(color.BlueString("%s", prog))
+			fmt.Println(color.BlueString("%s", prog))
 			obj := intp.Eval(prog)
 			if obj != nil {
-				fmt.Print(" -> ", color.GreenString("%s", obj))
+				fmt.Println(" -> ", color.GreenString("%s", obj))
 			}
-			fmt.Println("")
 			intp.PrintEnv()
 		}
 	}
