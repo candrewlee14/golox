@@ -1,0 +1,18 @@
+fun fib(n) {
+    var pf = 0;
+    var f = 1;
+    var i = 0;
+    while i < n {
+        var temp = f;
+        f = f + pf;
+        pf = temp;
+        i = i + 1;
+    }
+    return f;
+}
+
+var i = 0;
+while i < 100 {
+    print fib(i);
+    i = i + 1;
+}

@@ -12,7 +12,7 @@ import (
 )
 
 // Run interprets source code
-func Run(source string, intp *interp.Interpreter) {
+func Run(source string, intp *interp.Interpreter, show bool) {
 	scanner := lexer.NewLexer(source)
 	p := parser.New(&scanner)
 	prog := p.ParseProgram()
@@ -28,13 +28,15 @@ func Run(source string, intp *interp.Interpreter) {
 				fmt.Println(color.RedString("Runtime Error:"), err)
 			}
 		}()
-		obj := intp.Eval(prog)
-		if obj != nil {
-			fmt.Println(color.BlueString("%s", prog), "->", color.GreenString("%s", obj))
-		} else {
-			fmt.Println(color.BlueString("%s", prog))
+		if show {
+			fmt.Print(color.BlueString("%s", prog))
+			obj := intp.Eval(prog)
+			if obj != nil {
+				fmt.Print(" -> ", color.GreenString("%s", obj))
+			}
+			fmt.Println("")
+			intp.PrintEnv()
 		}
-		intp.PrintEnv()
 	}
 }
 
@@ -48,7 +50,7 @@ func RunPrompt() {
 		if err != nil {
 			os.Exit(64)
 		}
-		Run(string(line), &intp)
+		Run(string(line), &intp, true)
 		fmt.Print("> ")
 		report.HadError = false
 	}
@@ -56,13 +58,14 @@ func RunPrompt() {
 
 // RunFile interprets a file
 func RunFile(path string) {
+	fmt.Println("Reading from file...")
 	intp := interp.New()
 	bytes, err := os.ReadFile(path)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(64)
 	}
-	Run(string(bytes), &intp)
+	Run(string(bytes), &intp, true)
 	if report.HadError {
 		os.Exit(65)
 	}

@@ -37,7 +37,7 @@ func (intp *Interpreter) assign(name string, val obj.Obj) {
 		}
 		i--
 	}
-	panic(fmt.Sprintf("Variable %q does not exist in this scope. Use \"var %s = ...;\" to declare instead.", name, name))
+	panic(fmt.Sprintf("Attempted usage of variable %q which does not exist in this scope. Use \"var %s = ...;\" to declare instead.", name, name))
 }
 
 func (intp *Interpreter) resolve(name *string) obj.Obj {
@@ -84,6 +84,10 @@ func (intp *Interpreter) Eval(node ast.Node) obj.Obj {
 	case *ast.VarStmt:
 		val := intp.Eval(node.Value)
 		intp.bind(node.Name.String(), val)
+		return nil
+	case *ast.PrintStmt:
+		val := intp.Eval(node.Expr)
+		fmt.Println(val)
 		return nil
 	case *ast.IfStmt:
 		cond := intp.Eval(node.Cond)

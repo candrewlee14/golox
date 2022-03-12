@@ -1,0 +1,12 @@
+var globalVar = 100;
+
+fun testFun(x, y, z) {
+    return (x + y * z) / globalVar;
+}
+
+var z = 5;
+var y = 20;
+y = y - 1;
+var x = 5;
+
+print 21 * testFun(z, x, y);

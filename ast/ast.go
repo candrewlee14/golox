@@ -48,6 +48,18 @@ func (es ExprStmt) String() string {
 	return es.Expr.String()
 }
 
+// Print Statement
+type PrintStmt struct {
+	Token token.Token // "PRINT" token of expression
+	Expr  Expr
+}
+
+func (ps PrintStmt) statementNode() {}
+func (ps PrintStmt) String() string {
+	ps.statementNode()
+	return "print " + ps.Expr.String() + ";"
+}
+
 // Assignment Statement
 type AssignStmt struct {
 	Name Identifier // first token of expression

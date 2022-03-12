@@ -73,7 +73,7 @@ func (p *Parser) nextToken() {
 }
 
 func (p *Parser) addError(t token.TokenType) {
-	msg := fmt.Sprintf("expected next token to be %s, got %s instead",
+	msg := fmt.Sprintf("Expected next token to be %s, got %s instead",
 		t, p.peekToken.Type)
 	p.errors = append(p.errors, ParserError{msg: msg})
 }
@@ -123,6 +123,8 @@ func (p *Parser) parseStatement() ast.Stmt {
 		return p.parseWhileStmt()
 	case token.RETURN:
 		return p.parseReturnStmt()
+	case token.PRINT:
+		return p.parsePrintStmt()
 	default:
 		if p.curToken.Type == token.IDENTIFIER && p.peekToken.Type == token.EQUAL {
 			return p.parseAssignStmt()
@@ -177,6 +179,17 @@ func (p *Parser) parseCallExpr(funcExpr ast.Expr) ast.Expr {
 	return callExpr
 }
 
+func (p *Parser) parsePrintStmt() *ast.PrintStmt {
+	ps := &ast.PrintStmt{Token: p.curToken}
+	p.nextToken()
+	ps.Expr = p.parseExpr(LOWEST)
+	if !p.matchPeek(token.SEMICOLON) {
+		p.addError(token.SEMICOLON)
+		return nil
+	}
+	return ps
+}
+
 func (p *Parser) parseFuncDeclStmt() *ast.FuncDeclStmt {
 	stmt := &ast.FuncDeclStmt{Token: p.curToken}
 	p.nextToken()
@@ -204,6 +217,7 @@ func (p *Parser) parseFuncDeclStmt() *ast.FuncDeclStmt {
 				ParserError{fmt.Sprintf("Expected \")\", found end of file instead.")})
 			return nil
 		}
+		// look for identifier
 		if p.curToken.Type == token.IDENTIFIER {
 			param := p.parseIdent().(ast.Identifier)
 			stmt.Params = append(stmt.Params,
@@ -223,6 +237,7 @@ func (p *Parser) parseFuncDeclStmt() *ast.FuncDeclStmt {
 			return nil
 		}
 		p.nextToken()
+		// Look for comma or closing paren
 		if p.curToken.Type == token.COMMA {
 			p.nextToken()
 			continue
@@ -236,9 +251,12 @@ func (p *Parser) parseFuncDeclStmt() *ast.FuncDeclStmt {
 			return nil
 		}
 	}
+	fmt.Println(p.curToken.Lexeme)
 
 	blockStmt := p.parseBlockStmt()
 	stmt.Body = blockStmt
+
+	fmt.Println(p.curToken.Lexeme)
 
 	return stmt
 }
@@ -251,8 +269,9 @@ func (p *Parser) parseBlockStmt() *ast.BlockStmt {
 
 	for p.curToken.Type != token.RIGHT_BRACE {
 		if p.curToken.Type == token.EOF {
+			fmt.Print(block)
 			p.addError(token.RIGHT_BRACE)
-			return block
+			return nil
 		}
 		stmt := p.parseStatement()
 		if stmt != nil {
@@ -262,6 +281,9 @@ func (p *Parser) parseBlockStmt() *ast.BlockStmt {
 			p.nextToken()
 		}
 	}
+	// if p.curToken.Type == token.RIGHT_BRACE {
+	//     p.nextToken()
+	// }
 	return block
 }
 
@@ -278,7 +300,10 @@ func (p *Parser) parseVarStmt() *ast.VarStmt {
 	}
 	p.nextToken()
 	stmt.Value = p.parseExpr(LOWEST)
-	p.matchPeek(token.SEMICOLON)
+	if !p.matchPeek(token.SEMICOLON) {
+		p.addError(token.SEMICOLON)
+		return nil
+	}
 	return stmt
 }
 
@@ -288,8 +313,10 @@ func (p *Parser) parseIfStmt() *ast.IfStmt {
 	stmt.Cond = p.parseExpr(LOWEST)
 	p.nextToken()
 	stmt.OnTrue = p.parseBlockStmt()
+	p.nextToken()
 
-	if p.matchPeek(token.ELSE) {
+	fmt.Println(p.curToken.Type)
+	if p.curToken.Type == token.ELSE {
 		p.nextToken()
 		stmt.OnFalse = p.parseBlockStmt()
 	}

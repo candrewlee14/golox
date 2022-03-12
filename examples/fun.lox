@@ -1,0 +1,10 @@
+fun func(n) {
+    var f = 2 * n;
+    return f;
+}
+
+var i = 0;
+while i < 100 {
+    print func(i);
+    i = i + 1;
+}

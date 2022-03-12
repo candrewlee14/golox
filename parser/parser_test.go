@@ -552,7 +552,7 @@ func TestIfStmt(t *testing.T) {
 
 	alt, ok := stmt.OnFalse.Statements[0].(*ast.ExprStmt)
 	if !ok {
-		t.Fatalf("Statements[0] is not ast.ExprStmt. got=%T",
+		t.Fatalf("OnFalse.Statements[0] is not ast.ExprStmt. got=%T",
 			stmt.OnFalse.Statements[0])
 	}
 	if alt.Expr.String() != "x" {
