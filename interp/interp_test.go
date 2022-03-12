@@ -12,6 +12,11 @@ import (
 
 func testExprBool(t *testing.T, node ast.Node, res bool) {
 	intp := New()
+	defer func() {
+		if err := recover(); err != nil {
+			t.Fatalf("Runtime Error: %s", err)
+		}
+	}()
 	val := intp.Eval(node)
 	vb, ok := val.(*obj.Bool)
 	if !ok {
@@ -23,6 +28,11 @@ func testExprBool(t *testing.T, node ast.Node, res bool) {
 }
 func testExprNum(t *testing.T, node ast.Node, res float64) {
 	intp := New()
+	defer func() {
+		if err := recover(); err != nil {
+			t.Fatalf("Runtime Error: %s", err)
+		}
+	}()
 	val := intp.Eval(node)
 	vb, ok := val.(*obj.Num)
 	if !ok {

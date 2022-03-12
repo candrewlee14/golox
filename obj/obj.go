@@ -89,7 +89,7 @@ type Num struct {
 }
 
 func (n *Num) Type() ObjType  { return NUM_OBJ }
-func (n *Num) String() string { return fmt.Sprint(n.Value) }
+func (n *Num) String() string { return fmt.Sprintf("%f", n.Value) }
 
 type Bool struct {
 	Value bool

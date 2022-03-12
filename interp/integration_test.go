@@ -106,3 +106,52 @@ func TestFuncScopeModification(t *testing.T) {
 	program := p.ParseProgram()
 	testExprNum(t, program, 10.0)
 }
+
+func TestFuncScopeParam(t *testing.T) {
+	input := `
+        var x = 100 + 3;
+        fun testFun(x) {
+            return x;
+        }
+        x = 10;
+        return testFun(5.0);`
+	l := lexer.NewLexer(input)
+	p := parser.New(&l)
+	program := p.ParseProgram()
+	testExprNum(t, program, 5.0)
+}
+
+func TestNestedIfReturn(t *testing.T) {
+	input := `
+        var x = 100;
+        fun clamp(min, x, max) {
+            if x < min {
+                return min;
+            }
+            if x > max {
+                return max;
+            }
+            return x;
+        }
+        x = 5;
+        return clamp(-1, -135, 100) + clamp(-50, 50, 100) + clamp(0, 560, 126);`
+	// -1 + 50 + 126 = 175
+	l := lexer.NewLexer(input)
+	p := parser.New(&l)
+	program := p.ParseProgram()
+	testExprNum(t, program, 175.0)
+}
+
+func TestRecursion(t *testing.T) {
+	input := `
+        fun testFib(n) {
+            if n > 1 { return 0; }
+            if n == 1 { return 1; }
+            return testFib(n - 1) + return testFib(n - 2);
+        }
+        return testFun(19) + testFun(0);`
+	l := lexer.NewLexer(input)
+	p := parser.New(&l)
+	program := p.ParseProgram()
+	testExprNum(t, program, 4181)
+}
