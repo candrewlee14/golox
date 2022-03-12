@@ -251,12 +251,9 @@ func (p *Parser) parseFuncDeclStmt() *ast.FuncDeclStmt {
 			return nil
 		}
 	}
-	fmt.Println(p.curToken.Lexeme)
 
 	blockStmt := p.parseBlockStmt()
 	stmt.Body = blockStmt
-
-	fmt.Println(p.curToken.Lexeme)
 
 	return stmt
 }
@@ -269,7 +266,6 @@ func (p *Parser) parseBlockStmt() *ast.BlockStmt {
 
 	for p.curToken.Type != token.RIGHT_BRACE {
 		if p.curToken.Type == token.EOF {
-			fmt.Print(block)
 			p.addError(token.RIGHT_BRACE)
 			return nil
 		}
@@ -277,9 +273,7 @@ func (p *Parser) parseBlockStmt() *ast.BlockStmt {
 		if stmt != nil {
 			block.Statements = append(block.Statements, stmt)
 		}
-		if p.curToken.Type != token.RIGHT_BRACE {
-			p.nextToken()
-		}
+		p.nextToken()
 	}
 	// if p.curToken.Type == token.RIGHT_BRACE {
 	//     p.nextToken()
@@ -313,10 +307,9 @@ func (p *Parser) parseIfStmt() *ast.IfStmt {
 	stmt.Cond = p.parseExpr(LOWEST)
 	p.nextToken()
 	stmt.OnTrue = p.parseBlockStmt()
-	p.nextToken()
 
-	fmt.Println(p.curToken.Type)
-	if p.curToken.Type == token.ELSE {
+	if p.peekToken.Type == token.ELSE {
+		p.nextToken()
 		p.nextToken()
 		stmt.OnFalse = p.parseBlockStmt()
 	}
