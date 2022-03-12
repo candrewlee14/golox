@@ -1,0 +1,17 @@
+fun pow(base, exp) {
+    var res = 1;
+    var i = 0; 
+    while i < exp {
+        res = res * base; 
+        i = i + 1;
+    } 
+    return res;
+}
+
+var i = 1;
+while i < 10 {
+    print pow(i,4);
+    i = i + 1;
+}
+
+pow(2, 20);

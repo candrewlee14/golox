@@ -225,7 +225,9 @@ func (p *Parser) parseFuncDeclStmt() *ast.FuncDeclStmt {
 			_, dup := paramNames[param.String()]
 			if dup {
 				p.errors = append(p.errors,
-					ParserError{fmt.Sprintf("Found duplicate parameter identifier %q for function %q", param, stmt.Name)})
+					ParserError{fmt.Sprintf(
+                                            "Found duplicate parameter identifier %q for function %q", 
+                                            param, stmt.Name)})
 			} else {
 				paramNames[param.String()] = exists
 			}
@@ -242,7 +244,6 @@ func (p *Parser) parseFuncDeclStmt() *ast.FuncDeclStmt {
 			p.nextToken()
 			continue
 		} else if p.curToken.Type == token.RIGHT_PAREN {
-			p.nextToken()
 			break
 		} else {
 			p.errors = append(p.errors,
@@ -251,6 +252,12 @@ func (p *Parser) parseFuncDeclStmt() *ast.FuncDeclStmt {
 			return nil
 		}
 	}
+        if p.curToken.Type != token.RIGHT_PAREN {
+            p.errors = append(p.errors,
+                    ParserError{fmt.Sprintf("Expected closing parenthesis for function declaration, found %s", p.curToken.Type)})
+            return nil
+        }
+        p.nextToken()
 
 	blockStmt := p.parseBlockStmt()
 	stmt.Body = blockStmt
@@ -259,6 +266,11 @@ func (p *Parser) parseFuncDeclStmt() *ast.FuncDeclStmt {
 }
 
 func (p *Parser) parseBlockStmt() *ast.BlockStmt {
+        if p.curToken.Type != token.LEFT_BRACE {
+            p.errors = append(p.errors,
+                    ParserError{fmt.Sprintf("Expected opening brace, found %s", p.curToken.Type)})
+            return nil
+        }
 	p.nextToken()
 
 	block := &ast.BlockStmt{}
@@ -275,9 +287,6 @@ func (p *Parser) parseBlockStmt() *ast.BlockStmt {
 		}
 		p.nextToken()
 	}
-	// if p.curToken.Type == token.RIGHT_BRACE {
-	//     p.nextToken()
-	// }
 	return block
 }
 
@@ -306,6 +315,7 @@ func (p *Parser) parseIfStmt() *ast.IfStmt {
 	p.nextToken()
 	stmt.Cond = p.parseExpr(LOWEST)
 	p.nextToken()
+
 	stmt.OnTrue = p.parseBlockStmt()
 
 	if p.peekToken.Type == token.ELSE {
