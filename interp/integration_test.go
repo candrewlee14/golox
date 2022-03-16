@@ -145,11 +145,11 @@ func TestNestedIfReturn(t *testing.T) {
 func TestRecursion(t *testing.T) {
 	input := `
         fun testFib(n) {
-            if n > 1 { return 0; }
+            if n < 1 { return 0; }
             if n == 1 { return 1; }
-            return testFib(n - 1) + return testFib(n - 2);
+            return testFib(n - 1) + testFib(n - 2);
         }
-        return testFun(19) + testFun(0);`
+        return testFib(19) + testFib(0);`
 	l := lexer.NewLexer(input)
 	p := parser.New(&l)
 	program := p.ParseProgram()

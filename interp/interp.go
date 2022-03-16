@@ -167,7 +167,7 @@ func (intp *Interpreter) evalStmts(stmts []ast.Stmt, bubbleReturn bool) obj.Obj 
 			}
 		}
 	}
-	return nil
+    return result
 }
 
 func (intp *Interpreter) evalPrefix(pe *ast.PrefixExpr) obj.Obj {
