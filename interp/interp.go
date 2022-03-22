@@ -138,7 +138,7 @@ func (intp *Interpreter) Eval(node ast.Node) obj.Obj {
 			val := intp.Eval(arg)
 			localCallEnv.Bind(closure.Params[i].String(), val)
 		}
-        localCallEnv.Bind(node.Token.Lexeme, closure)
+		localCallEnv.Bind(node.Token.Lexeme, closure)
 		funcEnvStack := append(closure.EnvStack, localCallEnv)
 		funcIntp := Interpreter{EnvStack: funcEnvStack}
 		ret := funcIntp.evalBlock(closure.Body, false)
@@ -168,7 +168,7 @@ func (intp *Interpreter) evalStmts(stmts []ast.Stmt, bubbleReturn bool) obj.Obj 
 			}
 		}
 	}
-    return result
+	return result
 }
 
 func (intp *Interpreter) evalPrefix(pe *ast.PrefixExpr) obj.Obj {
@@ -201,6 +201,10 @@ func (intp *Interpreter) evalInfix(ie *ast.InfixExpr) obj.Obj {
 		return &obj.Bool{Value: resolveNum(l).Value >= resolveNum(r).Value}
 	case token.GREATER:
 		return &obj.Bool{Value: resolveNum(l).Value < resolveNum(r).Value}
+	case token.AND:
+		return &obj.Bool{Value: resolveBool(l).Value && resolveBool(r).Value}
+	case token.OR:
+		return &obj.Bool{Value: resolveBool(l).Value || resolveBool(r).Value}
 	case token.GREATER_EQUAL:
 		return &obj.Bool{Value: resolveNum(l).Value <= resolveNum(r).Value}
 	case token.EQUAL_EQUAL:
@@ -208,7 +212,7 @@ func (intp *Interpreter) evalInfix(ie *ast.InfixExpr) obj.Obj {
 	case token.BANG_EQUAL:
 		return &obj.Bool{Value: !isEq(l, r)}
 	}
-	panic(fmt.Sprintf("Expected infix operator, got: %s", ie.Token.Type))
+	panic(fmt.Sprintf("Expected infix operator, got: %s\n", ie.Token.Type))
 }
 
 func resolveNum(o obj.Obj) *obj.Num {
@@ -218,6 +222,15 @@ func resolveNum(o obj.Obj) *obj.Num {
 		return o
 	}
 	panic(fmt.Sprintf("Unable to resolve object to number. Expected: *obj.Num, got: %T", o))
+}
+
+func resolveBool(o obj.Obj) *obj.Bool {
+	// TODO: resolve variables to nums
+	switch o := o.(type) {
+	case *obj.Bool:
+		return o
+	}
+	panic(fmt.Sprintf("Unable to resolve object to boolean. Expected: *obj.Bool, got: %T", o))
 }
 
 func isEq(a obj.Obj, b obj.Obj) bool {

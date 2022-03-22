@@ -57,6 +57,8 @@ func New(l *lexer.Lexer) *Parser {
 		token.GREATER:       p.parseInfixExpr,
 		token.LESS_EQUAL:    p.parseInfixExpr,
 		token.GREATER_EQUAL: p.parseInfixExpr,
+		token.AND:           p.parseInfixExpr,
+		token.OR:            p.parseInfixExpr,
 		token.LEFT_PAREN:    p.parseCallExpr,
 	}
 
@@ -396,9 +398,10 @@ const (
 	_ Prec = iota
 	LOWEST
 	EQUALS      // ==
+	LOGICAL     // and, or
 	LESSGREATER // > or <
-	SUM         // +
-	PRODUCT     // *
+	SUM         // + or -
+	PRODUCT     // * or /
 	PREFIX      // -X or !X
 	CALL        // myFunction(X)
 )
@@ -410,6 +413,8 @@ var precedences = map[token.TokenType]Prec{
 	token.GREATER:       LESSGREATER,
 	token.LESS_EQUAL:    LESSGREATER,
 	token.GREATER_EQUAL: LESSGREATER,
+	token.AND:           LOGICAL,
+	token.OR:            LOGICAL,
 	token.PLUS:          SUM,
 	token.MINUS:         SUM,
 	token.SLASH:         PRODUCT,

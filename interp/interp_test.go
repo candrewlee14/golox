@@ -48,6 +48,44 @@ func testInfixNeqExpr(t *testing.T, node *ast.InfixExpr, res bool) {
 	testExprBool(t, nodeNeq, res)
 }
 
+var trueAndTrue *ast.InfixExpr = &ast.InfixExpr{
+	Left: ast.BoolExpr{
+		Token: token.Token{Type: token.TRUE, Lexeme: "true", Literal: true},
+	},
+	Token: token.Token{Type: token.AND, Lexeme: "and"},
+	Right: ast.BoolExpr{
+		Token: token.Token{Type: token.TRUE, Lexeme: "true", Literal: true},
+	},
+}
+
+func TestTrueAndTrue(t *testing.T) {
+	testExprBool(t, trueAndTrue, true)
+}
+func TestTrueOrTrue(t *testing.T) {
+	trueOrTrue := trueAndTrue
+	trueOrTrue.Token = token.Token{Type: token.OR, Lexeme: "or"}
+	testExprBool(t, trueOrTrue, true)
+}
+
+var trueAndFalse *ast.InfixExpr = &ast.InfixExpr{
+	Left: ast.BoolExpr{
+		Token: token.Token{Type: token.TRUE, Lexeme: "true", Literal: true},
+	},
+	Token: token.Token{Type: token.AND, Lexeme: "and"},
+	Right: ast.BoolExpr{
+		Token: token.Token{Type: token.FALSE, Lexeme: "false", Literal: false},
+	},
+}
+
+func TestTrueAndFalse(t *testing.T) {
+	testExprBool(t, trueAndFalse, false)
+}
+func TestTrueOrFalse(t *testing.T) {
+	trueOrFalse := trueAndFalse
+	trueOrFalse.Token = token.Token{Type: token.OR, Lexeme: "or"}
+	testExprBool(t, trueOrFalse, true)
+}
+
 var trueTrueEq *ast.InfixExpr = &ast.InfixExpr{
 	Left: ast.BoolExpr{
 		Token: token.Token{Type: token.TRUE, Lexeme: "true", Literal: true},

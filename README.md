@@ -19,8 +19,8 @@ Run `./golox <filename>.lox` to run a lox file.
 ## REPL
  - [x] Pretty-print parsed program
  - [x] Pretty-print local variables after a command
- - [ ] Support raw keyboard mode 
-    - [ ] up and down arrow keys to go to previous commands 
+ - [ ] Support raw keyboard mode
+    - [ ] up and down arrow keys to go to previous commands
     - [ ] allow newlines for multiline REPL programs
 
 ### Interpreter
@@ -46,19 +46,19 @@ Run `./golox <filename>.lox` to run a lox file.
         - [x] Greater Than or Equal: `18.9 >= 16.3` is `true`
     - Logical Operators
         - [x] Not: `!false`
-        - [ ] And: `true and false` is `false`
-        - [ ] Or: `true or false` is `true`
+        - [x] And: `true and false` is `false`
+        - [x] Or: `true or false` is `true`
     - [x] Precedence and Grouping: `(2 + 3 * 4) / 2` is `7`
     - [ ] String Concatenation: `"hey" + " " + "there"` is `"hey there"`
     - [ ] *(Extension)* Lists Concatenation
 - Statements
-    - [x] Print Statements: 
+    - [x] Print Statements:
         ```
         print "hello";
-        print 1.84; 
+        print 1.84;
         print x;
         ```
-    - [x] Expression Statements: 
+    - [x] Expression Statements:
         ```
         "hello";
         1.84;
@@ -76,35 +76,35 @@ Run `./golox <filename>.lox` to run a lox file.
             x = x + 1;
         }
         ```
-    - [x] While Loops: 
+    - [x] While Loops:
         ```
         while (x < 12) {
             x = x + 1;
         }
         ```
-    - [x] Variable Declarations: 
+    - [x] Variable Declarations:
         ```
         var x = 103;
         var foo123 = "hello";
         ```
-    - [x] Variable Assignments: 
+    - [x] Variable Assignments:
         ```
         x = 103;
         foo123 = "hello";
         ```
-    - [x] Block Statements: 
+    - [x] Block Statements:
         ```
         var y = 11;
         {
-            var x = 10 + y; 
+            var x = 10 + y;
             print x;
         }
         // x doesn't exist outside of the block scope
         ```
-    - [x] Function Declaration & Calls: 
+    - [x] Function Declaration & Calls:
         - [x] Close over outer-scoped variables
         - [x] Recursion
-        - [x] Return Statements exit scope and return value 
+        - [x] Return Statements exit scope and return value
         ```
         var foo = 15;
         fun myFunc(x, y, z) {
@@ -116,18 +116,18 @@ Run `./golox <filename>.lox` to run a lox file.
         print myFunc(1, 4, 2);
         ```
     - [ ] Classes
-        - [ ] Class Declaration & Instantiation: 
+        - [ ] Class Declaration & Instantiation:
         - [ ] Class Methods and Properties
         ```
         class BaseClass {
             sayHi() { print "Hi!"; }
         }
-        class Foo < BaseClass { 
+        class Foo < BaseClass {
             init(meat) {
                 this.meat = meat;
             }
-            cook() { print "Eggs and " + this.meat + " cooking!"; } 
-            serve(customer) {print "Here's your order, " + customer;} 
+            cook() { print "Eggs and " + this.meat + " cooking!"; }
+            serve(customer) {print "Here's your order, " + customer;}
         }
 
         // Instantiate and call method
@@ -141,7 +141,7 @@ Run `./golox <filename>.lox` to run a lox file.
         foo.sayHi();
         ```
 ### Extensions
-- [ ]  Standard Library 
+- [ ]  Standard Library
 - [ ]  Lists
 - [ ]  Custom Garbage Collector (currently piggybacking on Go's GC)
 - [ ]  Compile to bytecode or machine code instead of interpreting AST
