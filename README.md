@@ -103,7 +103,7 @@ Run `./golox <filename>.lox` to run a lox file.
         ```
     - [x] Function Declaration & Calls: 
         - [x] Close over outer-scoped variables
-        - [ ] Recursion
+        - [x] Recursion
         - [x] Return Statements exit scope and return value 
         ```
         var foo = 15;

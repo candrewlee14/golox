@@ -138,6 +138,7 @@ func (intp *Interpreter) Eval(node ast.Node) obj.Obj {
 			val := intp.Eval(arg)
 			localCallEnv.Bind(closure.Params[i].String(), val)
 		}
+        localCallEnv.Bind(node.Token.Lexeme, closure)
 		funcEnvStack := append(closure.EnvStack, localCallEnv)
 		funcIntp := Interpreter{EnvStack: funcEnvStack}
 		ret := funcIntp.evalBlock(closure.Body, false)
